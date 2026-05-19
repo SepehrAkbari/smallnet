@@ -75,7 +75,7 @@ def run_experiment():
     # Hyperparameters
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     num_classes = 32
-    batch_size = 8
+    batch_size = 4
     lr = 1e-4
     epochs = 30
 
