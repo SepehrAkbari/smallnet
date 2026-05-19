@@ -20,27 +20,23 @@ class CamVidDataset(Dataset):
         mask_path = os.path.join(self.masks_dir, self.masks[idx])
         
         image = Image.open(img_path).convert("RGB")
-        # Load mask. If it's a 3-channel RGB label, we convert it to 1-channel indices.
-        # Many CamVid versions use 'P' mode (palette) or raw 8-bit labels.
         mask = Image.open(mask_path)
         
         if self.transform:
             image = self.transform(image)
         
-        # Ensure mask is (H, W) and LongTensor
         mask_np = np.array(mask)
         if len(mask_np.shape) == 3:
-            # If your mask is RGB, you need a mapping. 
-            # If it's already indexed but has a dummy 3rd dim, take the first channel.
             mask_np = mask_np[:, :, 0]
             
         mask_tensor = torch.from_numpy(mask_np).long()
         
-        # Crop/Resize mask to match the 352x480 requirement
         mask_tensor = torch.nn.functional.interpolate(
             mask_tensor.unsqueeze(0).unsqueeze(0).float(), 
             size=(352, 480), 
             mode='nearest'
         ).squeeze().long()
+
+        mask_tensor[mask_tensor >= 32] = 255
 
         return image, mask_tensor

@@ -94,7 +94,7 @@ def run_experiment():
 
     # Model & Optimization
     model = VGG16_FCN32s(num_classes=num_classes)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=255)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # Initialize Trainer
