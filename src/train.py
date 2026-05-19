@@ -86,15 +86,16 @@ def run_experiment():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    train_ds = CamVidDataset("data/CamVid/train", "data/CamVid/train_labels", transform=t)
-    val_ds = CamVidDataset("data/CamVid/val", "data/CamVid/val_labels", transform=t)
+    dict_path = "data/CamVid/class_dict.csv"
+    train_ds = CamVidDataset("data/CamVid/train", "data/CamVid/train_labels", dict_path, transform=t)
+    val_ds = CamVidDataset("data/CamVid/val", "data/CamVid/val_labels", dict_path, transform=t)
     
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=2)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
     # Model & Optimization
     model = VGG16_FCN32s(num_classes=num_classes)
-    criterion = nn.CrossEntropyLoss(ignore_index=255)
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # Initialize Trainer
