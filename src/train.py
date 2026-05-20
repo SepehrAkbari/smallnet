@@ -77,9 +77,8 @@ def run_experiment():
     num_classes = 32
     batch_size = 4
     lr = 1e-4
-    epochs = 30
+    epochs = 200
 
-    # Data Setup
     t = transforms.Compose([
         transforms.Resize((352, 480)),
         transforms.ToTensor(),
@@ -93,12 +92,10 @@ def run_experiment():
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=2)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
-    # Model & Optimization
     model = VGG16_FCN32s(num_classes=num_classes)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    # Initialize Trainer
     trainer = Trainer(model, train_loader, val_loader, criterion, optimizer, device, num_classes)
     trainer.fit(epochs)
 
