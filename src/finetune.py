@@ -90,3 +90,15 @@ if __name__ == "__main__":
         print(f"COMMENCING EXPERIMENT FOR TENSOR RANK: {r}")
         print(f"{'='*50}")
         finetune_decomposed_model(target_rank=r, epochs=10, log_file=log_path)
+        
+        
+if __name__ == "__main__":
+    target_ranks = [1024, 512, 256, 128, 64]
+    log_path = "logs/pareto_results.csv"
+    
+    for r in target_ranks:
+        print(f"\n{'='*50}")
+        print(f"COMMENCING EXPERIMENT FOR TENSOR RANK: {r}")
+        print(f"{'='*50}")
+        torch.cuda.empty_cache() 
+        finetune_decomposed_model(target_rank=r, epochs=10, log_file=log_path)
