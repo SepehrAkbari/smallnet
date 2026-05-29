@@ -12,7 +12,7 @@ def evaluate_decomposed_model(rank):
     num_classes = 32
 
     print(f"Loading baseline model on {device}...")
-    model = VGG16_FCN32s(num_classes=num_classes)
+    model = VGG16_FCN32s(num_classes=num_classes, pretrained=False)
     model.load_state_dict(torch.load("model/best_model.pth", map_location=device))
     
     # classifier[0] is Conv2d(512, 4096, 7, 7) layer
