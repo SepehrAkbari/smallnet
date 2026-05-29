@@ -19,6 +19,8 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
     model = VGG16_FCN32s(num_classes=num_classes, pretrained=False)
     model.load_state_dict(torch.load("model/best_model.pth", map_location=device))
     
+    model = model.to(device)
+    
     # 2. Decompose the massive layer
     print(f"\n--- Decomposing Layer to Rank {target_rank} ---")
     original_params = sum(p.numel() for p in model.classifier[0].parameters())
@@ -27,8 +29,9 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
         model.classifier[0], 
         rank=target_rank, 
         factorization='cp',
-        decomposition_kwargs={'init': 'random'}
+        decomposition_kwargs={'init': 'random', 'n_iter_max': 10} 
     )
+    
     model.classifier[0] = decomposed_layer
     new_params = sum(p.numel() for p in model.classifier[0].parameters())
     print(f"Layer Params: {original_params:,} -> {new_params:,} ({(new_params/original_params)*100:.2f}%)")
