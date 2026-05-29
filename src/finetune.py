@@ -79,18 +79,6 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
             writer.writerow(["Rank", "Parameters", "Zero_Shot_Acc", "Zero_Shot_mIoU", "Fine_Tuned_mIoU"])
         # trainer.best_miou contains the highest mIoU achieved during the 10-epoch recovery
         writer.writerow([target_rank, new_params, zs_acc, zs_miou, trainer.best_miou])
-
-if __name__ == "__main__":
-    # The experimental ranks for the Pareto Frontier
-    target_ranks = [2048, 1024, 512, 256, 128, 64]
-    log_path = "logs/pareto_results.csv"
-    
-    for r in target_ranks:
-        print(f"\n{'='*50}")
-        print(f"COMMENCING EXPERIMENT FOR TENSOR RANK: {r}")
-        print(f"{'='*50}")
-        finetune_decomposed_model(target_rank=r, epochs=10, log_file=log_path)
-        
         
 if __name__ == "__main__":
     target_ranks = [1024, 512, 256, 128, 64]
