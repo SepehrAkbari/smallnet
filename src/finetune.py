@@ -81,7 +81,7 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
         writer.writerow([target_rank, new_params, zs_acc, zs_miou, trainer.best_miou])
         
 if __name__ == "__main__":
-    target_ranks = [1024, 512, 256, 128, 64]
+    target_ranks = [512, 256, 128, 64]
     log_path = "logs/pareto_results.csv"
     
     for r in target_ranks:
