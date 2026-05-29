@@ -17,7 +17,7 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
     
     # 1. Load the pristine baseline (pretrained=False to prevent cluster download hangs)
     model = VGG16_FCN32s(num_classes=num_classes, pretrained=False)
-    model.load_state_dict(torch.load("models/best_model.pth", map_location=device))
+    model.load_state_dict(torch.load("model/best_model.pth", map_location=device))
     
     # 2. Decompose the massive layer
     print(f"\n--- Decomposing Layer to Rank {target_rank} ---")
@@ -64,7 +64,7 @@ def finetune_decomposed_model(target_rank, epochs=10, log_file="logs/pareto_resu
 
     # 7. Run the recovery!
     print(f"\n--- Starting Rank-{target_rank} Fine-Tuning ({epochs} Epochs) ---")
-    save_path = f"models/finetuned_rank_{target_rank}.pth"
+    save_path = f"model/finetuned_rank_{target_rank}.pth"
     trainer.fit(epochs, save_path=save_path)
     
     # 8. Log Results to CSV
