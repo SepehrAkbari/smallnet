@@ -1,0 +1,9 @@
+Loading baseline model on cuda...
+Original Layer Params: 102,764,544
+Decomposed Layer Params: 1,187,584 (1.16%)
+
+Evaluating Zero-Shot Performance (No Retraining)...
+========================================
+Rank-256 Zero-Shot Val mIoU: 0.2663
+Rank-256 Zero-Shot Val Acc: 0.8549
+========================================

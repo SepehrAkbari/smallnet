@@ -1,0 +1,25 @@
+-------------------------------------------------------------------------------------
+Layer Name                     | Tensor Shape (Out, In, H, W)   | Parameters     
+-------------------------------------------------------------------------------------
+features.0.weight              | [64, 3, 3, 3]                  | 1,728          
+features.2.weight              | [64, 64, 3, 3]                 | 36,864         
+features.5.weight              | [128, 64, 3, 3]                | 73,728         
+features.7.weight              | [128, 128, 3, 3]               | 147,456        
+features.10.weight             | [256, 128, 3, 3]               | 294,912        
+features.12.weight             | [256, 256, 3, 3]               | 589,824        
+features.14.weight             | [256, 256, 3, 3]               | 589,824        
+features.17.weight             | [512, 256, 3, 3]               | 1,179,648      
+features.19.weight             | [512, 512, 3, 3]               | 2,359,296      
+features.21.weight             | [512, 512, 3, 3]               | 2,359,296      
+features.24.weight             | [512, 512, 3, 3]               | 2,359,296      
+features.26.weight             | [512, 512, 3, 3]               | 2,359,296      
+features.28.weight             | [512, 512, 3, 3]               | 2,359,296      
+classifier.0.weight            | [4096, 512, 7, 7]              | 102,760,448    
+classifier.3.weight            | [4096, 4096, 1, 1]             | 16,777,216     
+classifier.6.weight            | [32, 4096, 1, 1]               | 131,072        
+-------------------------------------------------------------------------------------
+Total 4D Tensor Parameters: 134,379,200
+
+[!] TARGETS FOR DECOMPOSITION [!]
+ -> classifier.0.weight: 102,760,448 parameters (76.5% of network)
+ -> classifier.3.weight: 16,777,216 parameters (12.5% of network)
