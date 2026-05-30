@@ -24,7 +24,7 @@ def measure_efficiency(model, device):
         elif device.type == 'mps':
             torch.mps.synchronize()
             
-    with torch.no_grad(): # warmup
+    with torch.no_grad(): # gpu warmup
         for _ in range(20):
             _ = model(dummy_input)
             
