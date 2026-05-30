@@ -13,35 +13,43 @@ def measure_efficiency(model, device):
     dummy_input = torch.randn(1, 3, 352, 480).to(device)
     
     # 1. Profile MACs (Multiply-Accumulates) and Parameters
-    # We suppress the thop console output to keep our table clean
     macs, params = profile(model, inputs=(dummy_input,), verbose=False)
     
-    # 2. Warm-up the GPU
-    # GPUs have a "spin-up" time. You must run the model a few times before timing it.
+    # Helper function to ensure the hardware finishes computing before the timer stops
+    def sync_hardware():
+        if device.type == 'cuda':
+            torch.cuda.synchronize()
+        elif device.type == 'mps':
+            torch.mps.synchronize()
+            
+    # 2. Warm-up the hardware
     with torch.no_grad():
         for _ in range(20):
             _ = model(dummy_input)
             
-    # 3. Measure Latency using CUDA events
+    # 3. Measure Latency using device-agnostic timing
     iterations = 100
-    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
     timings = []
     
     with torch.no_grad():
         for _ in range(iterations):
-            starter.record()
+            sync_hardware()
+            start_time = time.perf_counter()
+            
             _ = model(dummy_input)
-            ender.record()
-            # Wait for GPU sync
-            torch.cuda.synchronize()
-            curr_time = starter.elapsed_time(ender)
-            timings.append(curr_time)
+            
+            sync_hardware()
+            end_time = time.perf_counter()
+            
+            # Convert to milliseconds
+            timings.append((end_time - start_time) * 1000)
             
     avg_latency = sum(timings) / iterations
     return macs, params, avg_latency
 
 def run_benchmarks():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Automatically select the best available hardware
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Running benchmarks on: {device.type.upper()}\n")
     
     print(f"{'Model / Rank':<15} | {'Parameters':<12} | {'MACs (G)':<10} | {'Latency (ms)':<15}")
@@ -56,13 +64,12 @@ def run_benchmarks():
     target_ranks = [256, 128, 64]
     
     for rank in target_ranks:
-        # Re-initialize to clear previous decomposition
         model = VGG16_FCN32s(num_classes=32, pretrained=False)
         model.classifier[0] = tltorch.FactorizedConv.from_conv(
             model.classifier[0], 
             rank=rank, 
             factorization='cp',
-            decomposition_kwargs={'init': 'random'}
+            decomposition_kwargs={'init': 'random', 'n_iter_max': 10}
         )
         
         macs, params, lat = measure_efficiency(model, device)
