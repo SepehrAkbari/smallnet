@@ -1,6 +1,11 @@
+'''
+Model architecture for VGG16_FCN32s.
+'''
+
 import torch
 import torch.nn as nn
 from torchvision.models import vgg16, VGG16_Weights
+
 
 class VGG16_FCN32s(nn.Module):
     def __init__(self, num_classes=32, pretrained=True):

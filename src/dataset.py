@@ -1,9 +1,14 @@
+'''
+CamVid Dataset Loader.
+'''
+
 import os
 import csv
 import torch
 import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
+
 
 class CamVidDataset(Dataset):
     def __init__(self, images_dir, masks_dir, class_dict_path, transform=None):

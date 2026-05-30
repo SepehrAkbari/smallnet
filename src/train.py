@@ -1,3 +1,8 @@
+'''
+Trains VGG16_FCN32s model on CamVid.
+'''
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,6 +14,7 @@ import os
 from src.model import VGG16_FCN32s
 from src.dataset import CamVidDataset
 from src.utils import label_accuracy_score
+
 
 class Trainer:
     def __init__(self, model, train_loader, val_loader, criterion, optimizer, device, num_classes):
@@ -64,15 +70,14 @@ class Trainer:
             train_loss = self.train_epoch(epoch)
             acc, miou = self.validate()
             
-            print(f"-> Train Loss: {train_loss:.4f} | Val Acc: {acc:.4f} | Val mIoU: {miou:.4f}")
+            print(f"Train Loss: {train_loss:.4f} | Val Acc: {acc:.4f} | Val mIoU: {miou:.4f}")
             
             if miou > self.best_miou:
                 self.best_miou = miou
                 torch.save(self.model.state_dict(), save_path)
-                print(f"*** New Best mIoU: {miou:.4f}. Model saved. ***")
+                print(f"New Best mIoU: {miou:.4f}.")
 
-def run_experiment():
-    # Hyperparameters
+if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     num_classes = 32
     batch_size = 4
@@ -98,6 +103,3 @@ def run_experiment():
 
     trainer = Trainer(model, train_loader, val_loader, criterion, optimizer, device, num_classes)
     trainer.fit(epochs)
-
-if __name__ == "__main__":
-    run_experiment()

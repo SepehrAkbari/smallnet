@@ -1,3 +1,7 @@
+'''
+Classifier layer decomposition.
+'''
+
 import torch
 import tltorch
 from torch.utils.data import DataLoader
@@ -7,15 +11,14 @@ from src.model import VGG16_FCN32s
 from src.dataset import CamVidDataset
 from src.utils import label_accuracy_score
 
-def evaluate_decomposed_model(rank):
+
+def eval_decomp(rank):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_classes = 32
 
-    print(f"Loading baseline model on {device}...")
     model = VGG16_FCN32s(num_classes=num_classes, pretrained=False)
     model.load_state_dict(torch.load("model/best_model.pth", map_location=device))
     
-    # classifier[0] is Conv2d(512, 4096, 7, 7) layer
     original_layer = model.classifier[0]
     orig_params = sum(p.numel() for p in original_layer.parameters())
     
@@ -43,7 +46,7 @@ def evaluate_decomposed_model(rank):
     val_ds = CamVidDataset("data/CamVid/val", "data/CamVid/val_labels", dict_path, transform=t)
     val_loader = DataLoader(val_ds, batch_size=8, shuffle=False)
 
-    print("\nEvaluating Zero-Shot Performance (No Retraining)...")
+    print("\nEvaluating Zero-Shot Performance")
     preds, gts = [], []
     with torch.no_grad():
         for images, masks in val_loader:
@@ -55,10 +58,9 @@ def evaluate_decomposed_model(rank):
 
     acc, miou = label_accuracy_score(gts, preds, num_classes)
     print("="*40)
-    print(f"Rank-{rank} Zero-Shot Val mIoU: {miou:.4f}")
-    print(f"Rank-{rank} Zero-Shot Val Acc:  {acc:.4f}")
+    print(f"Rank-{rank} Val mIoU: {miou:.4f}")
+    print(f"Rank-{rank} Val Acc:  {acc:.4f}")
     print("="*40)
 
 if __name__ == "__main__":
-    # single aggressive rank
-    evaluate_decomposed_model(rank=256)
+    eval_decomp(rank=256)

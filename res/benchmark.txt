@@ -1,0 +1,8 @@
+Running benchmarks on: CUDA
+
+Model / Rank | Parameters | MACs (G) | Latency (ms)
+------------------------------------------------------------
+Baseline | 134.39 M | 71.48 G | 39.84 ms
+CP Rank-256 | 31.63 M | 54.53 G | 53.45 ms
+CP Rank-128 | 31.63 M | 54.53 G | 47.41 ms
+CP Rank-64 | 31.63 M | 54.53 G | 44.14 ms
