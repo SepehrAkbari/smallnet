@@ -1,0 +1,98 @@
+{
+  "experiment_id": "camvid_vgg_cp_rank_diagnostic",
+  "output_dir": "results/camvid_vgg_cp",
+  "device": null,
+  "dataset": {
+    "name": "CamVid",
+    "root": "data/CamVid",
+    "class_dict_path": "data/CamVid/class_dict.csv",
+    "image_size": [
+      352,
+      480
+    ],
+    "num_classes": 32,
+    "splits": [
+      "train",
+      "val",
+      "test"
+    ],
+    "ignore_index": 30,
+    "ignore_class_name": "Void"
+  },
+  "model": {
+    "family": "vgg16_fcn32s",
+    "pretrained": false,
+    "num_classes": 32,
+    "dense_checkpoint": "model/best_model.pth",
+    "target_layer": "classifier.0"
+  },
+  "cp": {
+    "factorization": "cp",
+    "ranks": [
+      64,
+      128,
+      256
+    ],
+    "seeds": [
+      0
+    ],
+    "init": "random",
+    "n_iter_max": 10,
+    "save_zero_shot_checkpoints": false,
+    "save_finetuned_checkpoints": false
+  },
+  "training": {
+    "training_epochs": 200,
+    "fine_tuning_epochs": 10,
+    "batch_size": 4,
+    "learning_rate": 0.0001,
+    "num_workers": 2,
+    "random_seeds": [
+      0
+    ],
+    "deterministic": true,
+    "freeze_features": true
+  },
+  "evaluation": {
+    "splits": [
+      "val",
+      "test"
+    ],
+    "batch_size": 4,
+    "num_workers": 2
+  },
+  "profiling": {
+    "batch_size": 1,
+    "input_size": [
+      1,
+      3,
+      352,
+      480
+    ],
+    "latency": true,
+    "warmup": 20,
+    "iterations": 100
+  },
+  "rank_diagnostics": {
+    "layers": [
+      "classifier.0.weight"
+    ],
+    "modes": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "thresholds": [
+      0.9,
+      0.95,
+      0.99
+    ],
+    "fixed_ranks": [
+      64,
+      128,
+      256
+    ]
+  },
+  "_config_path": "configs/camvid_vgg_cp.json"
+}
