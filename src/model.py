@@ -10,14 +10,11 @@ from torchvision.models import vgg16, VGG16_Weights
 class VGG16_FCN32s(nn.Module):
     def __init__(self, num_classes=32, pretrained=True):
         super(VGG16_FCN32s, self).__init__()
-        
+
         weights = VGG16_Weights.DEFAULT if pretrained else None
         vgg = vgg16(weights=weights)
         self.features = vgg.features
-        
-        vgg = vgg16(weights=VGG16_Weights.DEFAULT)
-        self.features = vgg.features
-        
+
         self.classifier = nn.Sequential(
             nn.Conv2d(512, 4096, kernel_size=7, padding=3),
             nn.ReLU(inplace=True),

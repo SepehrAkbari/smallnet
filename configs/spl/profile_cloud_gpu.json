@@ -1,0 +1,22 @@
+{
+  "name": "spl_cloud_gpu_profile",
+  "intended_device": "cuda",
+  "precision": "fp32",
+  "batch_size": 1,
+  "warmup": 20,
+  "iterations": 100,
+  "required_metadata": [
+    "gpu_name",
+    "cuda_version",
+    "torch_version",
+    "driver_version",
+    "batch_size",
+    "precision",
+    "warmup",
+    "iterations"
+  ],
+  "commands": [
+    "./.venv/bin/python scripts/run_spl_camvid.py --config configs/spl/camvid_vgg.json --device cuda",
+    "./.venv/bin/python scripts/run_spl_voc.py --config configs/spl/voc_deeplab.json --device cuda --download"
+  ]
+}

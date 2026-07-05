@@ -1,0 +1,42 @@
+{
+  "experiment_id": "spl_voc_deeplab_rank_energy",
+  "output_dir": "res/spl_ready/voc_deeplab",
+  "device": null,
+  "dataset": {
+    "name": "Pascal VOC 2012",
+    "root": "data/VOC",
+    "split": "val",
+    "download": false,
+    "batch_size": 4,
+    "num_workers": 2,
+    "image_size": [520, 520],
+    "ignore_index": 255
+  },
+  "model": {
+    "family": "deeplabv3_resnet50",
+    "num_classes": 21,
+    "pretrained": true
+  },
+  "rank_analysis": {
+    "layers": [],
+    "top_k_layers": 3,
+    "min_params": 100000,
+    "modes": [0, 1, 2, 3],
+    "thresholds": [0.9, 0.95, 0.99],
+    "fixed_ranks": [32, 64, 128]
+  },
+  "factorization": {
+    "enabled": true,
+    "factorization": "cp",
+    "init": "random",
+    "n_iter_max": 0,
+    "max_layers": 3,
+    "ranks": [32, 64, 128]
+  },
+  "profile": {
+    "input_size": [1, 3, 520, 520],
+    "latency": true,
+    "warmup": 20,
+    "iterations": 100
+  }
+}

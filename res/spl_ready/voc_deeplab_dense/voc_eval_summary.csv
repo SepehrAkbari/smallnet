@@ -1,0 +1,2 @@
+frequency_weighted_iou,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy
+0.9008131604322301,deeplabv3_dense,0.7637061035050168,0.7637061035050168,42004074,0.9438632749434168

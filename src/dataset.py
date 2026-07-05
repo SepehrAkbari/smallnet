@@ -15,10 +15,18 @@ class CamVidDataset(Dataset):
         self.images_dir = images_dir
         self.masks_dir = masks_dir
         self.transform = transform
-        self.images = sorted([f for f in os.listdir(images_dir) if f.endswith(('.png', '.jpg'))])
-        self.masks = sorted([f for f in os.listdir(masks_dir) if f.endswith(('.png', '.jpg'))])
+        self.images = sorted([f for f in os.listdir(images_dir) if self._is_image_file(f)])
+        self.masks = sorted([f for f in os.listdir(masks_dir) if self._is_image_file(f)])
         
         self.color_to_index = self._load_color_map(class_dict_path)
+
+    @staticmethod
+    def _is_image_file(filename):
+        return (
+            filename.lower().endswith(('.png', '.jpg', '.jpeg'))
+            and not filename.startswith('.')
+            and not filename.startswith('._')
+        )
 
     def _load_color_map(self, path):
         color_to_idx = {}

@@ -1,0 +1,5 @@
+checkpoint,frequency_weighted_iou,ignore_class,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy,policy,rank,split
+model/best_model.pth,0.0,Void,dense,0.0,0.0,134391648,0.0,primary_ignore_void,dense,val
+model/best_model.pth,0.0,,dense,0.0,0.0,134391648,0.0,all_classes,dense,val
+model/best_model.pth,0.0,Void,dense,0.0,0.0,134391648,0.0,primary_ignore_void,dense,test
+model/best_model.pth,0.0,,dense,0.0,0.0,134391648,0.0,all_classes,dense,test

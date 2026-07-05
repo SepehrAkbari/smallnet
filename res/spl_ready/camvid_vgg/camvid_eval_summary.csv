@@ -1,0 +1,17 @@
+checkpoint,frequency_weighted_iou,ignore_class,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy,policy,rank,split
+model/best_model.pth,0.0,Void,dense,0.0,0.0,134391648,0.0,primary_ignore_void,dense,val
+model/best_model.pth,0.0,,dense,0.0,0.0,134391648,0.0,all_classes,dense,val
+model/best_model.pth,0.0,Void,dense,0.0,0.0,134391648,0.0,primary_ignore_void,dense,test
+model/best_model.pth,0.0,,dense,0.0,0.0,134391648,0.0,all_classes,dense,test
+model/finetuned_rank_256.pth,0.0,Void,cp_rank_256,0.0,0.0,32814688,0.0,primary_ignore_void,256,val
+model/finetuned_rank_256.pth,0.0,,cp_rank_256,0.0,0.0,32814688,0.0,all_classes,256,val
+model/finetuned_rank_256.pth,0.0,Void,cp_rank_256,0.0,0.0,32814688,0.0,primary_ignore_void,256,test
+model/finetuned_rank_256.pth,0.0,,cp_rank_256,0.0,0.0,32814688,0.0,all_classes,256,test
+model/finetuned_rank_128.pth,0.0,Void,cp_rank_128,0.0,0.0,32222944,0.0,primary_ignore_void,128,val
+model/finetuned_rank_128.pth,0.0,,cp_rank_128,0.0,0.0,32222944,0.0,all_classes,128,val
+model/finetuned_rank_128.pth,0.0,Void,cp_rank_128,0.0,0.0,32222944,0.0,primary_ignore_void,128,test
+model/finetuned_rank_128.pth,0.0,,cp_rank_128,0.0,0.0,32222944,0.0,all_classes,128,test
+model/finetuned_rank_64.pth,0.0,Void,cp_rank_64,0.0,0.0,31927072,0.0,primary_ignore_void,64,val
+model/finetuned_rank_64.pth,0.0,,cp_rank_64,0.0,0.0,31927072,0.0,all_classes,64,val
+model/finetuned_rank_64.pth,0.0,Void,cp_rank_64,0.0,0.0,31927072,0.0,primary_ignore_void,64,test
+model/finetuned_rank_64.pth,0.0,,cp_rank_64,0.0,0.0,31927072,0.0,all_classes,64,test

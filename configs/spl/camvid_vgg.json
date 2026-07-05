@@ -1,0 +1,61 @@
+{
+  "experiment_id": "spl_camvid_vgg_rank_energy",
+  "output_dir": "res/spl_ready/camvid_vgg",
+  "device": null,
+  "dataset": {
+    "name": "CamVid",
+    "root": "data/CamVid"
+  },
+  "model": {
+    "family": "vgg16_fcn32s",
+    "num_classes": 32,
+    "input_size": [1, 3, 352, 480]
+  },
+  "checkpoints": [
+    {
+      "label": "dense",
+      "path": "model/best_model.pth"
+    },
+    {
+      "label": "cp_rank_256",
+      "path": "model/finetuned_rank_256.pth"
+    },
+    {
+      "label": "cp_rank_128",
+      "path": "model/finetuned_rank_128.pth"
+    },
+    {
+      "label": "cp_rank_64",
+      "path": "model/finetuned_rank_64.pth"
+    }
+  ],
+  "eval": {
+    "splits": ["val", "test"],
+    "batch_size": 4,
+    "num_workers": 2,
+    "image_size": [352, 480],
+    "void_policies": [
+      {
+        "name": "primary_ignore_void",
+        "ignore_class": "Void"
+      },
+      {
+        "name": "all_classes",
+        "ignore_class": null
+      }
+    ]
+  },
+  "profile": {
+    "input_size": [1, 3, 352, 480],
+    "latency": true,
+    "warmup": 20,
+    "iterations": 100
+  },
+  "rank_analysis": {
+    "checkpoint": "model/best_model.pth",
+    "layers": ["classifier.0.weight"],
+    "modes": [0, 1, 2, 3],
+    "thresholds": [0.9, 0.95, 0.99],
+    "fixed_ranks": [64, 128, 256]
+  }
+}

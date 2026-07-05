@@ -1,0 +1,29 @@
+{
+  "experiment_id": "spl_paper_assets",
+  "output_dir": "res/spl_ready/paper_assets",
+  "rank_manifest": "res/spl_ready/camvid_vgg_rank/camvid_rank_manifest.json",
+  "eval_manifest": "res/spl_ready/camvid_vgg_eval_manifest_combined.json",
+  "profile_manifest": "res/spl_ready/camvid_vgg_profile_manifest_combined.json",
+  "rank_plot_layer": "classifier.0.weight",
+  "rank_plot_mode": "0",
+  "qualitative": {
+    "data_root": "data/CamVid",
+    "split": "val",
+    "image": "Seq05VD_f03870.png",
+    "image_size": [352, 480],
+    "models": [
+      {
+        "label": "Dense",
+        "checkpoint": "model/best_model.pth"
+      },
+      {
+        "label": "CP Rank-256",
+        "checkpoint": "model/finetuned_rank_256.pth"
+      },
+      {
+        "label": "CP Rank-64",
+        "checkpoint": "model/finetuned_rank_64.pth"
+      }
+    ]
+  }
+}

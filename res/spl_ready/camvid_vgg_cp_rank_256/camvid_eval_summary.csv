@@ -1,0 +1,5 @@
+checkpoint,frequency_weighted_iou,ignore_class,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy,policy,rank,split
+model/finetuned_rank_256.pth,0.7491139506624154,Void,cp_rank_256,0.2500984709546244,0.2673466413652882,32814688,0.8472965409910751,primary_ignore_void,256,val
+model/finetuned_rank_256.pth,0.7240264852206888,,cp_rank_256,0.24160832491949727,0.2577155465807971,32814688,0.8327303503787878,all_classes,256,val
+model/finetuned_rank_256.pth,0.7152715792046911,Void,cp_rank_256,0.21971824376901783,0.2348712260979156,32814688,0.8205687470278665,primary_ignore_void,256,test
+model/finetuned_rank_256.pth,0.6846583932886003,,cp_rank_256,0.21602132318493067,0.2304227447305927,32814688,0.8048868687548981,all_classes,256,test

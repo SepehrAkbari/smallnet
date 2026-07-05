@@ -2,6 +2,23 @@
 Singular Value Decay of classifier layer.
 '''
 
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) in sys.path:
+    sys.path.remove(str(SCRIPT_DIR))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+os.environ.setdefault("MPLBACKEND", "Agg")
+os.environ.setdefault("XDG_CACHE_HOME", "/private/tmp/smallnet-cache")
+os.environ.setdefault("MPLCONFIGDIR", "/private/tmp/smallnet-matplotlib")
+Path(os.environ["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
+Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
+
 import torch
 import matplotlib.pyplot as plt
 
