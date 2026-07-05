@@ -19,3 +19,8 @@ dependencies = [
     "torchvision>=0.27.0",
     "tqdm>=4.67.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

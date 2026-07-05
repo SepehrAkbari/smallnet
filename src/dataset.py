@@ -11,13 +11,19 @@ from PIL import Image
 
 
 class CamVidDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, class_dict_path, transform=None):
+    def __init__(self, images_dir, masks_dir, class_dict_path, transform=None, image_size=(352, 480)):
         self.images_dir = images_dir
         self.masks_dir = masks_dir
         self.transform = transform
+        self.image_size = tuple(image_size)
         self.images = sorted([f for f in os.listdir(images_dir) if self._is_image_file(f)])
         self.masks = sorted([f for f in os.listdir(masks_dir) if self._is_image_file(f)])
-        
+        if len(self.images) != len(self.masks):
+            raise ValueError(
+                f"Image/mask count mismatch: {images_dir} has {len(self.images)} images, "
+                f"{masks_dir} has {len(self.masks)} masks"
+            )
+
         self.color_to_index = self._load_color_map(class_dict_path)
 
     @staticmethod
@@ -66,7 +72,7 @@ class CamVidDataset(Dataset):
         
         mask_tensor = torch.nn.functional.interpolate(
             mask_tensor.unsqueeze(0).unsqueeze(0).float(), 
-            size=(352, 480), 
+            size=self.image_size,
             mode='nearest'
         ).squeeze().long()
 

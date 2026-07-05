@@ -87,10 +87,10 @@ class DatasetTests(unittest.TestCase):
             )
             mask.save(masks / "sample.png")
 
-            dataset = CamVidDataset(images, masks, root / "class_dict.csv")
+            dataset = CamVidDataset(images, masks, root / "class_dict.csv", image_size=(4, 6))
             _, mask_tensor = dataset[0]
 
-            self.assertEqual(tuple(mask_tensor.shape), (352, 480))
+            self.assertEqual(tuple(mask_tensor.shape), (4, 6))
             self.assertEqual(set(mask_tensor.unique().tolist()), {0, 1})
 
 

@@ -60,15 +60,40 @@ def imagenet_transform(image_size):
     )
 
 
-def make_camvid_loader(data_root, split, batch_size=4, num_workers=2, image_size=(352, 480)):
+def camvid_split_paths(data_root, split):
     data_root = Path(data_root)
+    return data_root / split, data_root / f"{split}_labels"
+
+
+def camvid_split_available(data_root, split):
+    images_dir, masks_dir = camvid_split_paths(data_root, split)
+    return images_dir.is_dir() and masks_dir.is_dir()
+
+
+def make_camvid_loader(
+    data_root,
+    split,
+    batch_size=4,
+    num_workers=2,
+    image_size=(352, 480),
+    class_dict_path=None,
+    shuffle=False,
+):
+    data_root = Path(data_root)
+    images_dir, masks_dir = camvid_split_paths(data_root, split)
+    if not images_dir.is_dir():
+        raise FileNotFoundError(f"CamVid image split is missing: {images_dir}")
+    if not masks_dir.is_dir():
+        raise FileNotFoundError(f"CamVid label split is missing: {masks_dir}")
+    class_dict_path = Path(class_dict_path) if class_dict_path else data_root / "class_dict.csv"
     dataset = CamVidDataset(
-        data_root / split,
-        data_root / f"{split}_labels",
-        data_root / "class_dict.csv",
+        images_dir,
+        masks_dir,
+        class_dict_path,
         transform=imagenet_transform(image_size),
+        image_size=image_size,
     )
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
 
 class VOCSegmentationTensorDataset(Dataset):

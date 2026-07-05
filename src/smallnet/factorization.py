@@ -79,6 +79,41 @@ def replace_conv_layer(model, layer_name, rank, factorization="cp", init="random
     return replacement
 
 
+def load_dense_checkpoint(model, checkpoint_path, map_location="cpu"):
+    state_dict = torch.load(checkpoint_path, map_location=map_location)
+    model.load_state_dict(state_dict)
+    return model
+
+
+def build_factorized_model_from_dense(
+    model,
+    dense_checkpoint_path,
+    layer_name,
+    rank,
+    factorization="cp",
+    init="random",
+    n_iter_max=0,
+    save_path=None,
+):
+    '''
+    Load a dense checkpoint, replace one Conv2d layer with a factorized layer,
+    and optionally save the resulting state dict.
+    '''
+
+    load_dense_checkpoint(model, dense_checkpoint_path, map_location="cpu")
+    replacement = replace_conv_layer(
+        model,
+        layer_name=layer_name,
+        rank=rank,
+        factorization=factorization,
+        init=init,
+        n_iter_max=n_iter_max,
+    )
+    if save_path:
+        torch.save(model.state_dict(), save_path)
+    return model, replacement
+
+
 def infer_cp_rank_from_state_dict(state_dict, prefix):
     key = f"{prefix}.weight.weights"
     if key in state_dict:

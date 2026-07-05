@@ -14,6 +14,8 @@ from src.smallnet.diagnostics import (
     rank_for_energy,
 )
 from src.smallnet.factorization import MatrixLowRankConv2d
+from src.smallnet.factorization import replace_conv_layer
+from src.smallnet.models import build_vgg16_fcn32s
 from src.smallnet.modules import get_module, set_module
 from src.smallnet.profiling import manual_macs
 from src.smallnet.results import load_manifest, save_manifest
@@ -55,6 +57,13 @@ class ModuleReplacementTests(unittest.TestCase):
 
 
 class FactorizationTests(unittest.TestCase):
+    def test_vgg16_fcn32s_forward_shape(self):
+        model = build_vgg16_fcn32s(num_classes=4, pretrained=False)
+        model.eval()
+        with torch.no_grad():
+            out = model(torch.randn(1, 3, 64, 64))
+        self.assertEqual(tuple(out.shape), (1, 4, 64, 64))
+
     def test_matrix_low_rank_conv_shape_and_profile(self):
         torch.manual_seed(0)
         conv = nn.Conv2d(3, 5, kernel_size=3, padding=1)
@@ -65,6 +74,13 @@ class FactorizationTests(unittest.TestCase):
         macs, records = manual_macs(low_rank, (1, 3, 8, 8), device=torch.device("cpu"))
         self.assertEqual(len(records), 2)
         self.assertGreater(macs, 0)
+
+    def test_cp_replacement_produces_runnable_model(self):
+        torch.manual_seed(0)
+        model = nn.Sequential(nn.Conv2d(3, 5, kernel_size=3, padding=1), nn.ReLU())
+        replace_conv_layer(model, "0", rank=2, factorization="cp", init="random", n_iter_max=0)
+        out = model(torch.randn(1, 3, 8, 8))
+        self.assertEqual(tuple(out.shape), (1, 5, 8, 8))
 
 
 class ConfigAndManifestTests(unittest.TestCase):
