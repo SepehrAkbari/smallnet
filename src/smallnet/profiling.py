@@ -4,6 +4,7 @@ Manual parameter, MAC, and latency accounting.
 
 import time
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -99,8 +100,33 @@ def sync_device(device):
         torch.mps.synchronize()
 
 
+def summarize_latency_timings(timings, warmup, iterations, device_name=""):
+    values = np.asarray(timings, dtype=np.float64)
+    if values.size == 0:
+        return {
+            "latency_mean_ms": None,
+            "latency_std_ms": None,
+            "latency_median_ms": None,
+            "latency_min_ms": None,
+            "latency_max_ms": None,
+            "latency_warmup_iterations": int(warmup),
+            "latency_iterations": int(iterations),
+            "device_name": device_name,
+        }
+    return {
+        "latency_mean_ms": float(values.mean()),
+        "latency_std_ms": float(values.std(ddof=0)),
+        "latency_median_ms": float(np.median(values)),
+        "latency_min_ms": float(values.min()),
+        "latency_max_ms": float(values.max()),
+        "latency_warmup_iterations": int(warmup),
+        "latency_iterations": int(iterations),
+        "device_name": device_name,
+    }
+
+
 @torch.no_grad()
-def latency_ms(model, input_size, device, warmup=20, iterations=100):
+def latency_stats(model, input_size, device, warmup=20, iterations=100, device_name=""):
     model = model.to(device)
     model.eval()
     dummy = torch.randn(*input_size, device=device)
@@ -115,4 +141,10 @@ def latency_ms(model, input_size, device, warmup=20, iterations=100):
         model(dummy)
         sync_device(device)
         timings.append((time.perf_counter() - start) * 1000)
-    return sum(timings) / len(timings)
+    return summarize_latency_timings(timings, warmup=warmup, iterations=iterations, device_name=device_name)
+
+
+@torch.no_grad()
+def latency_ms(model, input_size, device, warmup=20, iterations=100):
+    stats = latency_stats(model, input_size, device, warmup=warmup, iterations=iterations)
+    return stats["latency_mean_ms"]

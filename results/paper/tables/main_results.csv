@@ -1,0 +1,3 @@
+frequency_weighted_iou,ignore_class,ignore_index,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy,rank,split,source,model_kind
+0.7954487673617121,Void,30,dense,0.3426291004755435,0.366258693611788,134391648,0.8813373963499208,dense,val,dense,dense
+0.7664373242811005,Void,30,dense,0.3012406748225519,0.3220158937758314,134391648,0.8604487756335648,dense,test,dense,dense

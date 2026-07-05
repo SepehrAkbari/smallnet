@@ -1,0 +1,3 @@
+checkpoint,dense_target_layer_parameters,frequency_weighted_iou,ignore_class,ignore_index,label,mean_iou_all_classes,mean_iou_present_classes,model_kind,parameters,pixel_accuracy,rank,split,target_layer_compression_ratio,target_layer_parameters,total_compression_ratio,total_parameters
+/Users/sepehrakbari/Projects/smallnet/model/best_model.pth,102764544,0.0,Void,30,dense,0.0,0.0,dense,134391648,0.0,dense,val,1.0,102764544,1.0,134391648
+/Users/sepehrakbari/Projects/smallnet/model/best_model.pth,102764544,0.0,Void,30,dense,0.0,0.0,dense,134391648,0.0,dense,test,1.0,102764544,1.0,134391648

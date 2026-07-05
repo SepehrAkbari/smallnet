@@ -13,10 +13,11 @@ from src.smallnet.data import camvid_split_available, load_camvid_class_names, m
 from src.smallnet.diagnostics import rank_energy_diagnostic
 from src.smallnet.evaluation import evaluate_segmentation
 from src.smallnet.factorization import build_factorized_model_from_dense
-from src.smallnet.models import build_vgg16_fcn32s
-from src.smallnet.modules import count_parameters
-from src.smallnet.profiling import latency_ms, manual_macs
-from src.smallnet.reproducibility import set_seed
+from src.smallnet.models import build_vgg16_fcn32s, load_vgg16_fcn32s_checkpoint
+from src.smallnet.modules import count_parameters, get_module
+from src.smallnet.paper import write_rank_energy_artifacts
+from src.smallnet.profiling import latency_stats, manual_macs
+from src.smallnet.reproducibility import device_name, set_seed
 from src.smallnet.results import save_config_snapshot, save_manifest, write_csv
 
 
@@ -61,6 +62,20 @@ def profile_config(config):
 
 def rank_config(config):
     return config.get("rank_diagnostics", {})
+
+
+def existing_finetuned_config(config):
+    return config.get("existing_finetuned_checkpoints", {})
+
+
+def factorization_method_note(config):
+    cp_cfg = cp_config(config)
+    return (
+        "post-training CP factorization fitted to the dense convolution with "
+        f"FactorizedConv.from_conv(init={cp_cfg.get('init', 'random')!r}, "
+        f"n_iter_max={cp_cfg.get('n_iter_max', 0)}); this is not a randomly "
+        "initialized neural layer unless n_iter_max is zero and no fitting is performed"
+    )
 
 
 def dense_checkpoint_path(config, root):
@@ -116,6 +131,30 @@ def load_dense_model(config, root):
     return model
 
 
+def parameter_reference(config, root):
+    dense = load_dense_model(config, root)
+    target_layer = model_config(config).get("target_layer", "classifier.0")
+    return {
+        "dense_total_parameters": count_parameters(dense),
+        "dense_target_layer_parameters": count_parameters(get_module(dense, target_layer)),
+        "target_layer": target_layer,
+    }
+
+
+def parameter_accounting(model, reference):
+    total = count_parameters(model)
+    target = count_parameters(get_module(model, reference["target_layer"]))
+    dense_total = reference["dense_total_parameters"]
+    dense_target = reference["dense_target_layer_parameters"]
+    return {
+        "total_parameters": total,
+        "target_layer_parameters": target,
+        "dense_target_layer_parameters": dense_target,
+        "target_layer_compression_ratio": float(target / dense_target) if dense_target else 0.0,
+        "total_compression_ratio": float(total / dense_total) if dense_total else 0.0,
+    }
+
+
 def make_cp_model(config, root, rank, save_path=None):
     model = make_model(config)
     cp_cfg = cp_config(config)
@@ -129,6 +168,15 @@ def make_cp_model(config, root, rank, save_path=None):
         n_iter_max=cp_cfg.get("n_iter_max", 0),
         save_path=save_path,
     )[0]
+
+
+def load_existing_cp_model(config, checkpoint_path, rank=None):
+    model, inferred_rank = load_vgg16_fcn32s_checkpoint(
+        checkpoint_path,
+        num_classes=model_config(config).get("num_classes", dataset_config(config).get("num_classes", 32)),
+        cp_layer=model_config(config).get("target_layer", "classifier.0"),
+    )
+    return model, inferred_rank if inferred_rank is not None else rank
 
 
 def loader_for_split(config, root, split, shuffle=False):
@@ -145,9 +193,23 @@ def loader_for_split(config, root, split, shuffle=False):
     )
 
 
-def evaluate_splits(model, config, root, device, label, rank, max_batches=None, splits=None):
+def evaluate_splits(
+    model,
+    config,
+    root,
+    device,
+    label,
+    rank,
+    max_batches=None,
+    splits=None,
+    model_kind="",
+    checkpoint="",
+    parameter_ref=None,
+):
     names = load_camvid_class_names(class_dict_path(config, root))
     ignore_index, ignore_name = ignore_index_and_name(config)
+    parameter_ref = parameter_ref or parameter_reference(config, root)
+    accounting = parameter_accounting(model, parameter_ref)
     rows = []
     evaluations = []
     skipped = []
@@ -176,7 +238,10 @@ def evaluate_splits(model, config, root, device, label, rank, max_batches=None, 
                 "label": label,
                 "rank": rank,
                 "split": split,
-                "parameters": count_parameters(model),
+                "model_kind": model_kind,
+                "checkpoint": checkpoint,
+                "parameters": accounting["total_parameters"],
+                **accounting,
                 "ignore_index": "" if ignore_index is None else ignore_index,
                 "ignore_class": ignore_name or "",
             }
@@ -186,7 +251,10 @@ def evaluate_splits(model, config, root, device, label, rank, max_batches=None, 
                 "label": label,
                 "rank": rank,
                 "split": split,
-                "parameters": count_parameters(model),
+                "model_kind": model_kind,
+                "checkpoint": checkpoint,
+                "parameters": accounting["total_parameters"],
+                **accounting,
                 "pixel_accuracy": summary["pixel_accuracy"],
                 "mean_iou_all_classes": summary["mean_iou_all_classes"],
                 "mean_iou_present_classes": summary["mean_iou_present_classes"],
@@ -212,6 +280,7 @@ def run_dense_evaluation(config, root, device, max_batches=None):
     stage = "dense_eval"
     output_dir = prepare_run_outputs(config, root, stage)
     model = load_dense_model(config, root)
+    parameter_ref = parameter_reference(config, root)
     rows, evaluations, skipped = evaluate_splits(
         model,
         config,
@@ -220,6 +289,9 @@ def run_dense_evaluation(config, root, device, max_batches=None):
         label="dense",
         rank="dense",
         max_batches=max_batches,
+        model_kind="dense",
+        checkpoint=str(dense_checkpoint_path(config, root)),
+        parameter_ref=parameter_ref,
     )
     write_csv(output_dir / f"{stage}_summary.csv", rows)
     return save_manifest(
@@ -229,6 +301,7 @@ def run_dense_evaluation(config, root, device, max_batches=None):
             "experiment_id": config.get("experiment_id"),
             "config": config,
             "dense_checkpoint": str(dense_checkpoint_path(config, root)),
+            "parameter_reference": parameter_ref,
             "evaluations": evaluations,
             "skipped_splits": skipped,
         },
@@ -236,9 +309,9 @@ def run_dense_evaluation(config, root, device, max_batches=None):
     )
 
 
-def iter_rank_seed(config):
+def iter_rank_seed(config, rank_key="ranks"):
     cp_cfg = cp_config(config)
-    ranks = cp_cfg.get("ranks", [64, 128, 256])
+    ranks = cp_cfg.get(rank_key, cp_cfg.get("ranks", [64, 128, 256]))
     seeds = cp_cfg.get("seeds", training_config(config).get("random_seeds", [0]))
     for rank in ranks:
         for seed in seeds:
@@ -251,10 +324,11 @@ def run_cp_zero_shot(config, root, device, max_batches=None):
     all_rows = []
     all_evaluations = []
     skipped_splits = []
+    parameter_ref = parameter_reference(config, root)
     checkpoint_dir = ensure_dir(output_dir / "checkpoints")
     save_checkpoints = bool(cp_config(config).get("save_zero_shot_checkpoints", False))
 
-    for rank, seed in iter_rank_seed(config):
+    for rank, seed in iter_rank_seed(config, rank_key="zero_shot_ranks"):
         seed_status = set_seed(seed, deterministic=training_config(config).get("deterministic", True))
         save_path = checkpoint_dir / f"cp_rank_{rank}_seed_{seed}_zero_shot.pth" if save_checkpoints else None
         model = make_cp_model(config, root, rank=rank, save_path=save_path)
@@ -267,6 +341,9 @@ def run_cp_zero_shot(config, root, device, max_batches=None):
             label=label,
             rank=rank,
             max_batches=max_batches,
+            model_kind="cp_zero_shot",
+            checkpoint=str(save_path or dense_checkpoint_path(config, root)),
+            parameter_ref=parameter_ref,
         )
         for row in rows:
             row["seed"] = seed
@@ -286,6 +363,8 @@ def run_cp_zero_shot(config, root, device, max_batches=None):
             "kind": "cp_zero_shot_evaluation",
             "experiment_id": config.get("experiment_id"),
             "config": config,
+            "factorization_method": factorization_method_note(config),
+            "parameter_reference": parameter_ref,
             "evaluations": all_evaluations,
             "skipped_splits": skipped_splits,
         },
@@ -343,6 +422,7 @@ def run_cp_finetune(config, root, device, max_batches=None):
     all_evaluations = []
     skipped_splits = []
     training_records = []
+    parameter_ref = parameter_reference(config, root)
     checkpoint_dir = ensure_dir(output_dir / "checkpoints")
     save_checkpoints = bool(cp_config(config).get("save_finetuned_checkpoints", False))
     ignore_index, _ = ignore_index_and_name(config)
@@ -352,7 +432,7 @@ def run_cp_finetune(config, root, device, max_batches=None):
     if epochs <= 0:
         raise ValueError("training.fine_tuning_epochs must be positive for cp_finetune")
 
-    for rank, seed in iter_rank_seed(config):
+    for rank, seed in iter_rank_seed(config, rank_key="fine_tune_ranks"):
         seed_status = set_seed(seed, deterministic=train_cfg.get("deterministic", True))
         model = make_cp_model(config, root, rank=rank).to(device)
         freeze_for_finetuning(model, config)
@@ -391,6 +471,9 @@ def run_cp_finetune(config, root, device, max_batches=None):
             label=label,
             rank=rank,
             max_batches=max_batches,
+            model_kind="cp_finetuned_new",
+            checkpoint=str(save_path or ""),
+            parameter_ref=parameter_ref,
         )
         for row in rows:
             row["seed"] = seed
@@ -423,9 +506,64 @@ def run_cp_finetune(config, root, device, max_batches=None):
             "kind": "cp_finetune_evaluation",
             "experiment_id": config.get("experiment_id"),
             "config": config,
+            "factorization_method": factorization_method_note(config),
+            "parameter_reference": parameter_ref,
             "training_records": training_records,
             "evaluations": all_evaluations,
             "skipped_splits": skipped_splits,
+        },
+        device=device,
+    )
+
+
+def run_existing_finetuned_evaluation(config, root, device, max_batches=None):
+    stage = "existing_finetuned"
+    output_dir = prepare_run_outputs(config, root, stage)
+    rows = []
+    evaluations = []
+    skipped = []
+    parameter_ref = parameter_reference(config, root)
+
+    for rank_text, configured_path in existing_finetuned_config(config).items():
+        rank = int(rank_text)
+        checkpoint = resolve_path(configured_path, root)
+        if not checkpoint.is_file():
+            skipped.append(
+                {
+                    "rank": rank,
+                    "checkpoint": str(checkpoint),
+                    "reason": "checkpoint file is missing",
+                }
+            )
+            continue
+        model, actual_rank = load_existing_cp_model(config, checkpoint, rank=rank)
+        label = f"cp_rank_{actual_rank}_existing_finetuned"
+        rank_rows, rank_evaluations, split_skips = evaluate_splits(
+            model,
+            config,
+            root,
+            device,
+            label=label,
+            rank=actual_rank,
+            max_batches=max_batches,
+            model_kind="cp_finetuned_existing",
+            checkpoint=str(checkpoint),
+            parameter_ref=parameter_ref,
+        )
+        rows.extend(rank_rows)
+        evaluations.extend(rank_evaluations)
+        skipped.extend(split_skips)
+
+    write_csv(output_dir / "existing_finetuned_summary.csv", rows)
+    return save_manifest(
+        output_dir / "existing_finetuned_metadata.json",
+        {
+            "kind": "existing_finetuned_evaluation",
+            "experiment_id": config.get("experiment_id"),
+            "config": config,
+            "parameter_reference": parameter_ref,
+            "evaluations": evaluations,
+            "skipped": skipped,
         },
         device=device,
     )
@@ -441,41 +579,85 @@ def run_profiling(config, root, device):
     run_latency = bool(prof_cfg.get("latency", False))
     rows = []
     profiles = []
+    parameter_ref = parameter_reference(config, root)
+    actual_device_name = device_name(device)
 
-    models = [("dense", "dense", load_dense_model(config, root))]
-    for rank, seed in iter_rank_seed(config):
+    models = [("dense", "dense", "dense", str(dense_checkpoint_path(config, root)), load_dense_model(config, root))]
+    for rank, seed in iter_rank_seed(config, rank_key="profile_ranks"):
         set_seed(seed, deterministic=training_config(config).get("deterministic", True))
-        models.append((f"cp_rank_{rank}_seed_{seed}_zero_shot", rank, make_cp_model(config, root, rank)))
+        models.append(
+            (
+                f"cp_rank_{rank}_seed_{seed}_zero_shot",
+                rank,
+                "cp_zero_shot",
+                str(dense_checkpoint_path(config, root)),
+                make_cp_model(config, root, rank),
+            )
+        )
+    if prof_cfg.get("include_existing_finetuned", True):
+        for rank_text, configured_path in existing_finetuned_config(config).items():
+            checkpoint = resolve_path(configured_path, root)
+            if checkpoint.is_file():
+                model, actual_rank = load_existing_cp_model(config, checkpoint, rank=int(rank_text))
+                models.append(
+                    (
+                        f"cp_rank_{actual_rank}_existing_finetuned",
+                        actual_rank,
+                        "cp_finetuned_existing",
+                        str(checkpoint),
+                        model,
+                    )
+                )
 
-    for label, rank, model in models:
+    for label, rank, model_kind, checkpoint, model in models:
         model = model.to(device)
         macs, records = manual_macs(model, input_size, device=device)
-        latency = None
+        latency = {
+            "latency_mean_ms": None,
+            "latency_std_ms": None,
+            "latency_median_ms": None,
+            "latency_min_ms": None,
+            "latency_max_ms": None,
+            "latency_warmup_iterations": int(prof_cfg.get("warmup", 10)),
+            "latency_iterations": int(prof_cfg.get("iterations", 50)),
+            "device_name": actual_device_name,
+        }
         if run_latency:
-            latency = latency_ms(
+            latency = latency_stats(
                 model,
                 input_size,
                 device,
                 warmup=int(prof_cfg.get("warmup", 10)),
                 iterations=int(prof_cfg.get("iterations", 50)),
+                device_name=actual_device_name,
             )
+        accounting = parameter_accounting(model, parameter_ref)
         row = {
             "label": label,
             "rank": rank,
-            "parameters": count_parameters(model),
+            "model_kind": model_kind,
+            "checkpoint": checkpoint,
+            "device": device.type,
+            "parameters": accounting["total_parameters"],
+            **accounting,
             "macs": macs,
-            "latency_ms": latency,
+            "latency_ms": latency["latency_mean_ms"],
+            **latency,
         }
         rows.append(row)
         profiles.append({**row, "input_size": list(input_size), "layer_records": records})
 
     write_csv(output_dir / f"{stage}_summary.csv", rows)
+    paper_outputs = write_rank_energy_artifacts(diagnostics, config, root)
     return save_manifest(
         output_dir / f"{stage}_metadata.json",
         {
             "kind": "profile",
             "experiment_id": config.get("experiment_id"),
             "config": config,
+            "parameter_reference": parameter_ref,
+            "device": device.type,
+            "device_name": actual_device_name,
             "profiles": profiles,
         },
         device=device,
@@ -519,6 +701,11 @@ def run_rank_diagnostics(config, root, device=None):
             "config": config,
             "dense_checkpoint": str(dense_checkpoint_path(config, root)),
             "diagnostics": diagnostics,
+            "paper_outputs": paper_outputs,
+            "interpretation_note": (
+                "Unfolding rank-energy is a necessary structural diagnostic for CP compression, "
+                "not proof that a CP-rank model will preserve downstream accuracy."
+            ),
         },
         device=device,
     )

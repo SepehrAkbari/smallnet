@@ -18,6 +18,7 @@ from src.smallnet.experiment import (
     run_cp_finetune,
     run_cp_zero_shot,
     run_dense_evaluation,
+    run_existing_finetuned_evaluation,
     run_profiling,
     run_rank_diagnostics,
 )
@@ -27,10 +28,18 @@ from src.smallnet.reproducibility import auto_device
 STAGES = {
     "dense": [run_dense_evaluation],
     "zero-shot": [run_cp_zero_shot],
+    "eval-finetuned": [run_existing_finetuned_evaluation],
     "finetune": [run_cp_finetune],
     "profile": [run_profiling],
     "rank": [run_rank_diagnostics],
-    "full": [run_dense_evaluation, run_cp_zero_shot, run_cp_finetune, run_profiling, run_rank_diagnostics],
+    "full": [
+        run_dense_evaluation,
+        run_cp_zero_shot,
+        run_existing_finetuned_evaluation,
+        run_cp_finetune,
+        run_profiling,
+        run_rank_diagnostics,
+    ],
 }
 
 

@@ -10,6 +10,11 @@ the parameter count of a dominant FCN classifier layer, but rank-energy
 diagnostics, downstream mIoU, and hardware latency can disagree. Compression
 claims should therefore be audited structurally and empirically.
 
+When the config uses `FactorizedConv.from_conv` with `init: "random"` and
+`n_iter_max > 0`, the random value is the tensor-decomposition initializer.
+This is post-training CP factorization fitted to the dense convolution, not a
+claim that the neural layer is simply randomly initialized.
+
 ## Repository Layout
 
 - `src/model.py`: VGG16-FCN32s model definition.
@@ -19,6 +24,8 @@ claims should therefore be audited structurally and empirically.
   reproducibility.
 - `scripts/run_experiment.py`: canonical experiment entrypoint.
 - `configs/camvid_vgg_cp.json`: default reproducible CamVid/VGG/CP config.
+- `configs/camvid_vgg_cp_paper.json`: paper-oriented rank sweep config.
+- `docs/colab_runbook.md`: Colab/T4 execution and artifact download notes.
 - `tests/`: lightweight tests using synthetic tensors and tiny temporary data.
 - `res/`: historical regenerated result summaries and paper assets.
 - `results/`: default output directory for new experiment runs.
@@ -93,6 +100,12 @@ CP rank-sweep zero-shot evaluation:
 
 ```bash
 uv run python scripts/run_experiment.py --config configs/camvid_vgg_cp.json --stage zero-shot
+```
+
+Evaluate existing fine-tuned CP checkpoints without retraining:
+
+```bash
+uv run python scripts/run_experiment.py --config configs/camvid_vgg_cp_paper.json --stage eval-finetuned
 ```
 
 CP rank-sweep fine-tuning:
