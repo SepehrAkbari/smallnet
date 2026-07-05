@@ -648,7 +648,6 @@ def run_profiling(config, root, device):
         profiles.append({**row, "input_size": list(input_size), "layer_records": records})
 
     write_csv(output_dir / f"{stage}_summary.csv", rows)
-    paper_outputs = write_rank_energy_artifacts(diagnostics, config, root)
     return save_manifest(
         output_dir / f"{stage}_metadata.json",
         {
@@ -693,6 +692,7 @@ def run_rank_diagnostics(config, root, device=None):
         rows.append(row)
 
     write_csv(output_dir / f"{stage}_summary.csv", rows)
+    paper_outputs = write_rank_energy_artifacts(diagnostics, config, root)
     return save_manifest(
         output_dir / f"{stage}_metadata.json",
         {

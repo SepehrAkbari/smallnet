@@ -1,0 +1,2 @@
+checkpoint,dense_target_layer_parameters,device,device_name,label,latency_iterations,latency_max_ms,latency_mean_ms,latency_median_ms,latency_min_ms,latency_ms,latency_std_ms,latency_warmup_iterations,macs,model_kind,parameters,rank,target_layer_compression_ratio,target_layer_parameters,total_compression_ratio,total_parameters
+/Users/sepehrakbari/Projects/smallnet/model/best_model.pth,102764544,cpu,CPU,dense,100,,,,,,,20,71422771200,dense,134391648,dense,1.0,102764544,1.0,134391648

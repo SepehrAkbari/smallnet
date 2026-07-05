@@ -1,0 +1,2 @@
+layer,max_tail_r1,max_tail_r2,params,r_tau_0.900,shape
+classifier.0.weight,0.5124033665440064,0.1621811559802735,12,3,"[4, 3, 1, 1]"

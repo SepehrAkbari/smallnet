@@ -1,0 +1,128 @@
+{
+  "schema": "smallnet.manifest.v1",
+  "environment": {
+    "created_utc": "2026-07-05T19:34:32.306909+00:00",
+    "python": "3.12.10",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "torch": "2.12.0",
+    "cuda_available": false,
+    "cuda_version": null,
+    "cudnn_version": null,
+    "mps_available": true,
+    "device": "cpu",
+    "device_name": "CPU",
+    "git_commit": "fcfb9d238b7d39867b21cb94225eae3b8574f25d",
+    "git_dirty": true
+  },
+  "kind": "rank_energy_diagnostics",
+  "experiment_id": "rank_smoke",
+  "config": {
+    "experiment_id": "rank_smoke",
+    "output_dir": "results/smoke_rank",
+    "model": {
+      "dense_checkpoint": "/tmp/smallnet_rank_smoke/dense_tiny.pth",
+      "target_layer": "classifier.0"
+    },
+    "cp": {
+      "ranks": [
+        1,
+        2
+      ]
+    },
+    "rank_diagnostics": {
+      "layers": [
+        "classifier.0.weight"
+      ],
+      "modes": [
+        0,
+        1
+      ],
+      "thresholds": [
+        0.9
+      ],
+      "fixed_ranks": [
+        1,
+        2
+      ]
+    },
+    "paper": {
+      "tables_dir": "results/smoke_paper/tables",
+      "figures_dir": "results/smoke_paper/figures",
+      "manifest_path": "results/smoke_paper/MANIFEST.json"
+    },
+    "_config_path": "/tmp/smallnet_rank_smoke.json"
+  },
+  "dense_checkpoint": "/tmp/smallnet_rank_smoke/dense_tiny.pth",
+  "diagnostics": {
+    "classifier.0.weight": {
+      "shape": [
+        4,
+        3,
+        1,
+        1
+      ],
+      "params": 12,
+      "modes": {
+        "0": {
+          "matrix_shape": [
+            4,
+            3
+          ],
+          "singular_values": [
+            2.74187970161438,
+            2.3237526416778564,
+            1.5813140869140625
+          ],
+          "cumulative_energy": [
+            0.48759666571065424,
+            0.8378189104010151,
+            1.0
+          ],
+          "threshold_ranks": {
+            "0.900": 3
+          },
+          "tail_energy_at_fixed_ranks": {
+            "1": 0.5124033342893457,
+            "2": 0.16218108959898492
+          }
+        },
+        "1": {
+          "matrix_shape": [
+            3,
+            4
+          ],
+          "singular_values": [
+            2.741879463195801,
+            2.3237524032592773,
+            1.5813143253326416
+          ],
+          "cumulative_energy": [
+            0.4875966334559936,
+            0.8378188440197265,
+            1.0
+          ],
+          "threshold_ranks": {
+            "0.900": 3
+          },
+          "tail_energy_at_fixed_ranks": {
+            "1": 0.5124033665440064,
+            "2": 0.1621811559802735
+          }
+        }
+      },
+      "rank_energy_thresholds": {
+        "0.900": 3
+      },
+      "cp_necessary_tail_energy": {
+        "1": 0.5124033665440064,
+        "2": 0.1621811559802735
+      }
+    }
+  },
+  "paper_outputs": {
+    "rank_energy_summary_csv": "/Users/sepehrakbari/Projects/smallnet/results/smoke_paper/tables/rank_energy_summary.csv",
+    "rank_energy_summary_tex": "/Users/sepehrakbari/Projects/smallnet/results/smoke_paper/tables/rank_energy_summary.tex",
+    "singular_values_by_mode_csv": "/Users/sepehrakbari/Projects/smallnet/results/smoke_paper/tables/singular_values_by_mode.csv"
+  },
+  "interpretation_note": "Unfolding rank-energy is a necessary structural diagnostic for CP compression, not proof that a CP-rank model will preserve downstream accuracy."
+}

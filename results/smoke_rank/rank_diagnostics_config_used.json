@@ -1,0 +1,36 @@
+{
+  "experiment_id": "rank_smoke",
+  "output_dir": "results/smoke_rank",
+  "model": {
+    "dense_checkpoint": "/tmp/smallnet_rank_smoke/dense_tiny.pth",
+    "target_layer": "classifier.0"
+  },
+  "cp": {
+    "ranks": [
+      1,
+      2
+    ]
+  },
+  "rank_diagnostics": {
+    "layers": [
+      "classifier.0.weight"
+    ],
+    "modes": [
+      0,
+      1
+    ],
+    "thresholds": [
+      0.9
+    ],
+    "fixed_ranks": [
+      1,
+      2
+    ]
+  },
+  "paper": {
+    "tables_dir": "results/smoke_paper/tables",
+    "figures_dir": "results/smoke_paper/figures",
+    "manifest_path": "results/smoke_paper/MANIFEST.json"
+  },
+  "_config_path": "/tmp/smallnet_rank_smoke.json"
+}

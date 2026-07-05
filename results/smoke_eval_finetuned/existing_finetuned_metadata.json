@@ -1,7 +1,7 @@
 {
   "schema": "smallnet.manifest.v1",
   "environment": {
-    "created_utc": "2026-07-05T19:20:00.778173+00:00",
+    "created_utc": "2026-07-05T19:36:05.471112+00:00",
     "python": "3.12.10",
     "platform": "macOS-26.3-arm64-arm-64bit",
     "torch": "2.12.0",
@@ -11,7 +11,7 @@
     "mps_available": true,
     "device": "cpu",
     "device_name": "CPU",
-    "git_commit": "95abef2fdd85511597c409853b2398d969ca74b6",
+    "git_commit": "fcfb9d238b7d39867b21cb94225eae3b8574f25d",
     "git_dirty": true
   },
   "kind": "existing_finetuned_evaluation",

@@ -8,7 +8,12 @@ import torch
 import torch.nn as nn
 
 from src.smallnet.diagnostics import rank_energy_diagnostic
-from src.smallnet.experiment import parameter_accounting, run_existing_finetuned_evaluation
+from src.smallnet.experiment import (
+    parameter_accounting,
+    run_existing_finetuned_evaluation,
+    run_profiling,
+    run_rank_diagnostics,
+)
 from src.smallnet.paper import build_paper_artifacts, write_rank_energy_artifacts
 from src.smallnet.profiling import summarize_latency_timings
 
@@ -51,7 +56,7 @@ class ExistingCheckpointTests(unittest.TestCase):
             config = {
                 "experiment_id": "unit",
                 "output_dir": "out",
-                "model": {"target_layer": "0"},
+                "model": {"target_layer": "0", "dense_checkpoint": "dense.pth"},
                 "existing_finetuned_checkpoints": {"64": "missing_rank64.pth"},
             }
             reference = {
@@ -69,6 +74,77 @@ class ExistingCheckpointTests(unittest.TestCase):
             self.assertEqual(metadata["evaluations"], [])
             self.assertEqual(metadata["skipped"][0]["rank"], 64)
             self.assertIn("missing", metadata["skipped"][0]["reason"])
+
+
+class StageScopeTests(unittest.TestCase):
+    def test_run_profiling_does_not_reference_rank_diagnostics_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            model = nn.Sequential(nn.Conv2d(3, 2, kernel_size=1))
+            reference = {
+                "target_layer": "0",
+                "dense_total_parameters": sum(param.numel() for param in model.parameters()),
+                "dense_target_layer_parameters": sum(param.numel() for param in model[0].parameters()),
+            }
+            config = {
+                "experiment_id": "unit",
+                "output_dir": "out",
+                "model": {"target_layer": "0", "dense_checkpoint": "dense.pth"},
+                "cp": {"profile_ranks": []},
+                "profiling": {
+                    "input_size": [1, 3, 4, 4],
+                    "latency": False,
+                    "include_existing_finetuned": False,
+                },
+            }
+
+            with (
+                mock.patch("src.smallnet.experiment.parameter_reference", return_value=reference),
+                mock.patch("src.smallnet.experiment.load_dense_model", return_value=model),
+                mock.patch(
+                    "src.smallnet.experiment.write_rank_energy_artifacts",
+                    side_effect=AssertionError("profiling must not write rank artifacts"),
+                ),
+            ):
+                metadata_path = run_profiling(config, root, torch.device("cpu"))
+
+            self.assertTrue((root / "out/profile_summary.csv").is_file())
+            self.assertTrue((root / "out/profile_metadata.json").is_file())
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+            self.assertEqual(metadata["kind"], "profile")
+
+    def test_run_rank_diagnostics_metadata_contains_paper_outputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            checkpoint = root / "dense.pth"
+            torch.save({"0.weight": torch.randn(4, 3, 1, 1)}, checkpoint)
+            config = {
+                "experiment_id": "unit",
+                "output_dir": "out",
+                "model": {"dense_checkpoint": str(checkpoint), "target_layer": "0"},
+                "cp": {"ranks": [1, 2]},
+                "rank_diagnostics": {
+                    "layers": ["0.weight"],
+                    "modes": [0, 1],
+                    "thresholds": [0.9],
+                    "fixed_ranks": [1, 2],
+                },
+                "paper": {
+                    "tables_dir": "paper/tables",
+                    "figures_dir": "paper/figures",
+                    "manifest_path": "paper/MANIFEST.json",
+                },
+            }
+
+            metadata_path = run_rank_diagnostics(config, root, device=torch.device("cpu"))
+            self.assertTrue((root / "out/rank_diagnostics_summary.csv").is_file())
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+
+            self.assertEqual(metadata["kind"], "rank_energy_diagnostics")
+            self.assertIn("paper_outputs", metadata)
+            self.assertTrue(Path(metadata["paper_outputs"]["rank_energy_summary_csv"]).is_file())
 
 
 class RankEnergyArtifactTests(unittest.TestCase):
