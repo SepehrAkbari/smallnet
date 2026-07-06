@@ -119,6 +119,5 @@
     "tables_dir": "results/paper/tables",
     "figures_dir": "results/paper/figures",
     "manifest_path": "results/paper/MANIFEST.json"
-  },
-  "_config_path": "configs/camvid_vgg_cp_colab_remaining.json"
+  }
 }

@@ -36,24 +36,16 @@
       512
     ],
     "zero_shot_ranks": [
-      32,
       64,
       128,
-      256,
-      512
+      256
     ],
     "fine_tune_ranks": [
       64,
       128,
       256
     ],
-    "profile_ranks": [
-      32,
-      64,
-      128,
-      256,
-      512
-    ],
+    "profile_ranks": [],
     "seeds": [
       0
     ],
@@ -128,5 +120,5 @@
     "figures_dir": "results/paper/figures",
     "manifest_path": "results/paper/MANIFEST.json"
   },
-  "_config_path": "configs/camvid_vgg_cp_paper.json"
+  "_config_path": "configs/camvid_vgg_cp_colab_remaining.json"
 }
