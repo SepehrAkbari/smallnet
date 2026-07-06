@@ -1,12 +1,18 @@
 \begin{table}
 \caption{CamVid segmentation accuracy and parameter ratios.}
 \label{tab:main-results}
-\begin{tabular}{rlrlrrrrllll}
+\begin{tabular}{lrrlrlrrlrrllrrrrl}
 \toprule
-frequency\_weighted\_iou & ignore\_class & ignore\_index & label & mean\_iou\_all\_classes & mean\_iou\_present\_classes & parameters & pixel\_accuracy & rank & split & source & model\_kind \\
+checkpoint & dense\_target\_layer\_parameters & frequency\_weighted\_iou & ignore\_class & ignore\_index & label & mean\_iou\_all\_classes & mean\_iou\_present\_classes & model\_kind & parameters & pixel\_accuracy & rank & split & target\_layer\_compression\_ratio & target\_layer\_parameters & total\_compression\_ratio & total\_parameters & source \\
 \midrule
-0.7954 & Void & 30 & dense & 0.3426 & 0.3663 & 134391648 & 0.8813 & dense & val & dense & dense \\
-0.7664 & Void & 30 & dense & 0.3012 & 0.3220 & 134391648 & 0.8604 & dense & test & dense & dense \\
+/content/smallnet/model/finetuned\_rank\_64.pth & 102764544 & 0.7690 & Void & 30 & cp\_rank\_64\_existing\_finetuned & 0.2730 & 0.2919 & cp\_finetuned\_existing & 31927072 & 0.8637 & 64 & val & 0.0029 & 299968 & 0.2376 & 31927072 & existing\_finetuned \\
+/content/smallnet/model/finetuned\_rank\_128.pth & 102764544 & 0.7661 & Void & 30 & cp\_rank\_128\_existing\_finetuned & 0.2709 & 0.2896 & cp\_finetuned\_existing & 32222944 & 0.8624 & 128 & val & 0.0058 & 595840 & 0.2398 & 32222944 & existing\_finetuned \\
+/content/smallnet/model/finetuned\_rank\_256.pth & 102764544 & 0.7491 & Void & 30 & cp\_rank\_256\_existing\_finetuned & 0.2501 & 0.2673 & cp\_finetuned\_existing & 32814688 & 0.8473 & 256 & val & 0.0116 & 1187584 & 0.2442 & 32814688 & existing\_finetuned \\
+/content/smallnet/model/best\_model.pth & 102764544 & 0.7954 & Void & 30 & dense & 0.3426 & 0.3663 & dense & 134391648 & 0.8813 & dense & val & 1.0000 & 102764544 & 1.0000 & 134391648 & dense \\
+/content/smallnet/model/finetuned\_rank\_64.pth & 102764544 & 0.7437 & Void & 30 & cp\_rank\_64\_existing\_finetuned & 0.2561 & 0.2738 & cp\_finetuned\_existing & 31927072 & 0.8436 & 64 & test & 0.0029 & 299968 & 0.2376 & 31927072 & existing\_finetuned \\
+/content/smallnet/model/finetuned\_rank\_128.pth & 102764544 & 0.7390 & Void & 30 & cp\_rank\_128\_existing\_finetuned & 0.2506 & 0.2679 & cp\_finetuned\_existing & 32222944 & 0.8411 & 128 & test & 0.0058 & 595840 & 0.2398 & 32222944 & existing\_finetuned \\
+/content/smallnet/model/finetuned\_rank\_256.pth & 102764544 & 0.7153 & Void & 30 & cp\_rank\_256\_existing\_finetuned & 0.2197 & 0.2349 & cp\_finetuned\_existing & 32814688 & 0.8206 & 256 & test & 0.0116 & 1187584 & 0.2442 & 32814688 & existing\_finetuned \\
+/content/smallnet/model/best\_model.pth & 102764544 & 0.7664 & Void & 30 & dense & 0.3012 & 0.3220 & dense & 134391648 & 0.8604 & dense & test & 1.0000 & 102764544 & 1.0000 & 134391648 & dense \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -1,23 +1,23 @@
 {
   "schema": "smallnet.manifest.v1",
   "environment": {
-    "created_utc": "2026-07-05T18:48:40.880394+00:00",
-    "python": "3.12.10",
-    "platform": "macOS-26.3-arm64-arm-64bit",
-    "torch": "2.12.0",
-    "cuda_available": false,
-    "cuda_version": null,
-    "cudnn_version": null,
-    "mps_available": true,
-    "device": "mps",
-    "device_name": "Apple MPS",
-    "git_commit": "3d7eb9da55311d08912164cb62696d7b05c97ac4",
+    "created_utc": "2026-07-06T16:16:23.874902+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
+    "device": "cuda",
+    "device_name": "Tesla T4",
+    "git_commit": "bebff6a81ecc6e956bf455717b81b3d3d830a3ff",
     "git_dirty": true
   },
   "kind": "dense_baseline_evaluation",
-  "experiment_id": "camvid_vgg_cp_rank_diagnostic",
+  "experiment_id": "camvid_vgg_cp_diagnostic_paper",
   "config": {
-    "experiment_id": "camvid_vgg_cp_rank_diagnostic",
+    "experiment_id": "camvid_vgg_cp_diagnostic_paper",
     "output_dir": "results/camvid_vgg_cp",
     "device": null,
     "dataset": {
@@ -47,9 +47,30 @@
     "cp": {
       "factorization": "cp",
       "ranks": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ],
+      "zero_shot_ranks": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ],
+      "fine_tune_ranks": [
         64,
         128,
         256
+      ],
+      "profile_ranks": [
+        32,
+        64,
+        128,
+        256,
+        512
       ],
       "seeds": [
         0
@@ -58,6 +79,11 @@
       "n_iter_max": 10,
       "save_zero_shot_checkpoints": false,
       "save_finetuned_checkpoints": false
+    },
+    "existing_finetuned_checkpoints": {
+      "64": "model/finetuned_rank_64.pth",
+      "128": "model/finetuned_rank_128.pth",
+      "256": "model/finetuned_rank_256.pth"
     },
     "training": {
       "training_epochs": 200,
@@ -89,7 +115,8 @@
       ],
       "latency": true,
       "warmup": 20,
-      "iterations": 100
+      "iterations": 100,
+      "include_existing_finetuned": true
     },
     "rank_diagnostics": {
       "layers": [
@@ -107,14 +134,26 @@
         0.99
       ],
       "fixed_ranks": [
+        32,
         64,
         128,
-        256
+        256,
+        512
       ]
     },
-    "_config_path": "configs/camvid_vgg_cp.json"
+    "paper": {
+      "tables_dir": "results/paper/tables",
+      "figures_dir": "results/paper/figures",
+      "manifest_path": "results/paper/MANIFEST.json"
+    },
+    "_config_path": "configs/camvid_vgg_cp_paper.json"
   },
-  "dense_checkpoint": "/Users/sepehrakbari/Projects/smallnet/model/best_model.pth",
+  "dense_checkpoint": "/content/smallnet/model/best_model.pth",
+  "parameter_reference": {
+    "dense_total_parameters": 134391648,
+    "dense_target_layer_parameters": 102764544,
+    "target_layer": "classifier.0"
+  },
   "evaluations": [
     {
       "label": "dense",
@@ -122,9 +161,9 @@
       "split": "val",
       "summary": {
         "pixel_accuracy": 0.8813373963499208,
-        "mean_iou_all_classes": 0.34262910047554357,
-        "mean_iou_present_classes": 0.366258693611788,
-        "frequency_weighted_iou": 0.7954487673617121,
+        "mean_iou_all_classes": 0.342629091998618,
+        "mean_iou_present_classes": 0.36625868455024685,
+        "frequency_weighted_iou": 0.795448766902312,
         "per_class": [
           {
             "class_id": 0,
@@ -158,7 +197,7 @@
             "class_id": 4,
             "class_name": "Building",
             "support": 3793697,
-            "iou": 0.8434792020370532,
+            "iou": 0.8434793996417492,
             "excluded": false
           },
           {
@@ -277,7 +316,7 @@
             "class_id": 21,
             "class_name": "Sky",
             "support": 2662767,
-            "iou": 0.8841571036135601,
+            "iou": 0.8841571449523763,
             "excluded": false
           },
           {
@@ -312,7 +351,7 @@
             "class_id": 26,
             "class_name": "Tree",
             "support": 1728629,
-            "iou": 0.7677745996083509,
+            "iou": 0.7677740978801482,
             "excluded": false
           },
           {
@@ -354,7 +393,14 @@
         "label": "dense",
         "rank": "dense",
         "split": "val",
+        "model_kind": "dense",
+        "checkpoint": "/content/smallnet/model/best_model.pth",
         "parameters": 134391648,
+        "total_parameters": 134391648,
+        "target_layer_parameters": 102764544,
+        "dense_target_layer_parameters": 102764544,
+        "target_layer_compression_ratio": 1.0,
+        "total_compression_ratio": 1.0,
         "ignore_index": 30,
         "ignore_class": "Void"
       },
@@ -1078,7 +1124,7 @@
           0,
           0,
           0,
-          52456,
+          52455,
           17,
           0,
           0,
@@ -1095,7 +1141,7 @@
           0,
           0,
           356,
-          2477654,
+          2477655,
           710,
           0,
           407,
@@ -1265,12 +1311,12 @@
           0,
           850,
           547,
-          78436,
+          78437,
           3,
           0,
           3285,
           0,
-          1530260,
+          1530259,
           63,
           0,
           6837,
@@ -1454,10 +1500,10 @@
       "rank": "dense",
       "split": "test",
       "summary": {
-        "pixel_accuracy": 0.8604487756335648,
-        "mean_iou_all_classes": 0.30124067482255196,
-        "mean_iou_present_classes": 0.3220158937758314,
-        "frequency_weighted_iou": 0.7664373242811005,
+        "pixel_accuracy": 0.8604488021615883,
+        "mean_iou_all_classes": 0.30124069025818506,
+        "mean_iou_present_classes": 0.3220159102759909,
+        "frequency_weighted_iou": 0.7664373572759958,
         "per_class": [
           {
             "class_id": 0,
@@ -1491,7 +1537,7 @@
             "class_id": 4,
             "class_name": "Building",
             "support": 8962898,
-            "iou": 0.813506170526589,
+            "iou": 0.8135060924490525,
             "excluded": false
           },
           {
@@ -1533,7 +1579,7 @@
             "class_id": 10,
             "class_name": "LaneMkgsDriv",
             "support": 559581,
-            "iou": 0.09775832403160475,
+            "iou": 0.09775994878768825,
             "excluded": false
           },
           {
@@ -1582,7 +1628,7 @@
             "class_id": 17,
             "class_name": "Road",
             "support": 9623778,
-            "iou": 0.8819024696158044,
+            "iou": 0.8819025538213844,
             "excluded": false
           },
           {
@@ -1610,7 +1656,7 @@
             "class_id": 21,
             "class_name": "Sky",
             "support": 6727583,
-            "iou": 0.8884815406793466,
+            "iou": 0.8884816668429822,
             "excluded": false
           },
           {
@@ -1645,7 +1691,7 @@
             "class_id": 26,
             "class_name": "Tree",
             "support": 4331812,
-            "iou": 0.7582212864759038,
+            "iou": 0.7582213353757947,
             "excluded": false
           },
           {
@@ -1680,14 +1726,21 @@
             "class_id": 31,
             "class_name": "Wall",
             "support": 630222,
-            "iou": 0.46264044347216615,
+            "iou": 0.46263911602914004,
             "excluded": false
           }
         ],
         "label": "dense",
         "rank": "dense",
         "split": "test",
+        "model_kind": "dense",
+        "checkpoint": "/content/smallnet/model/best_model.pth",
         "parameters": 134391648,
+        "total_parameters": 134391648,
+        "target_layer_parameters": 102764544,
+        "dense_target_layer_parameters": 102764544,
+        "target_layer_compression_ratio": 1.0,
+        "total_compression_ratio": 1.0,
         "ignore_index": 30,
         "ignore_class": "Void"
       },
@@ -2043,14 +2096,14 @@
           0,
           131,
           0,
-          60168,
+          60169,
           0,
           0,
           0,
           26,
           426,
           99,
-          486011,
+          486010,
           4009,
           5715,
           0,
@@ -2598,12 +2651,12 @@
           0,
           608,
           1368,
-          179870,
+          179869,
           792,
           0,
           5760,
           0,
-          3748919,
+          3748920,
           383,
           0,
           8888,
@@ -2615,7 +2668,7 @@
           3,
           1421,
           0,
-          189021,
+          189022,
           110680,
           0,
           94,
@@ -2641,7 +2694,7 @@
           67791,
           0,
           0,
-          13151,
+          13150,
           205
         ],
         [
@@ -2773,12 +2826,12 @@
           0,
           0,
           0,
-          12544,
+          12545,
           0,
           0,
           13194,
           44745,
-          348520
+          348519
         ]
       ]
     }

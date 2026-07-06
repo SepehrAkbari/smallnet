@@ -1,5 +1,5 @@
 {
-  "experiment_id": "camvid_vgg_cp_rank_diagnostic",
+  "experiment_id": "camvid_vgg_cp_diagnostic_paper",
   "output_dir": "results/camvid_vgg_cp",
   "device": null,
   "dataset": {
@@ -29,9 +29,30 @@
   "cp": {
     "factorization": "cp",
     "ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "zero_shot_ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "fine_tune_ranks": [
       64,
       128,
       256
+    ],
+    "profile_ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
     ],
     "seeds": [
       0
@@ -40,6 +61,11 @@
     "n_iter_max": 10,
     "save_zero_shot_checkpoints": false,
     "save_finetuned_checkpoints": false
+  },
+  "existing_finetuned_checkpoints": {
+    "64": "model/finetuned_rank_64.pth",
+    "128": "model/finetuned_rank_128.pth",
+    "256": "model/finetuned_rank_256.pth"
   },
   "training": {
     "training_epochs": 200,
@@ -71,7 +97,8 @@
     ],
     "latency": true,
     "warmup": 20,
-    "iterations": 100
+    "iterations": 100,
+    "include_existing_finetuned": true
   },
   "rank_diagnostics": {
     "layers": [
@@ -89,10 +116,17 @@
       0.99
     ],
     "fixed_ranks": [
+      32,
       64,
       128,
-      256
+      256,
+      512
     ]
   },
-  "_config_path": "configs/camvid_vgg_cp.json"
+  "paper": {
+    "tables_dir": "results/paper/tables",
+    "figures_dir": "results/paper/figures",
+    "manifest_path": "results/paper/MANIFEST.json"
+  },
+  "_config_path": "configs/camvid_vgg_cp_paper.json"
 }

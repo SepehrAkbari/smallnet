@@ -1,3 +1,3 @@
-frequency_weighted_iou,ignore_class,ignore_index,label,mean_iou_all_classes,mean_iou_present_classes,parameters,pixel_accuracy,rank,split
-0.7954487673617121,Void,30,dense,0.34262910047554357,0.366258693611788,134391648,0.8813373963499208,dense,val
-0.7664373242811005,Void,30,dense,0.30124067482255196,0.3220158937758314,134391648,0.8604487756335648,dense,test
+checkpoint,dense_target_layer_parameters,frequency_weighted_iou,ignore_class,ignore_index,label,mean_iou_all_classes,mean_iou_present_classes,model_kind,parameters,pixel_accuracy,rank,split,target_layer_compression_ratio,target_layer_parameters,total_compression_ratio,total_parameters
+/content/smallnet/model/best_model.pth,102764544,0.795448766902312,Void,30,dense,0.342629091998618,0.36625868455024685,dense,134391648,0.8813373963499208,dense,val,1.0,102764544,1.0,134391648
+/content/smallnet/model/best_model.pth,102764544,0.7664373572759958,Void,30,dense,0.30124069025818506,0.3220159102759909,dense,134391648,0.8604488021615883,dense,test,1.0,102764544,1.0,134391648

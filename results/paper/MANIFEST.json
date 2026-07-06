@@ -1,34 +1,35 @@
 {
   "schema": "smallnet.paper_manifest.v1",
   "environment": {
-    "created_utc": "2026-07-05T19:36:07.236624+00:00",
-    "python": "3.12.10",
-    "platform": "macOS-26.3-arm64-arm-64bit",
-    "torch": "2.12.0",
-    "cuda_available": false,
-    "cuda_version": null,
-    "cudnn_version": null,
-    "mps_available": true,
-    "git_commit": "fcfb9d238b7d39867b21cb94225eae3b8574f25d",
+    "created_utc": "2026-07-06T16:39:00.163522+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
+    "git_commit": "bebff6a81ecc6e956bf455717b81b3d3d830a3ff",
     "git_dirty": true
   },
-  "input_directory": "/Users/sepehrakbari/Projects/smallnet/results/camvid_vgg_cp",
+  "input_directory": "/content/smallnet/results/camvid_vgg_cp",
   "missing_inputs": [
-    "/Users/sepehrakbari/Projects/smallnet/results/camvid_vgg_cp/cp_zero_shot_summary.csv",
-    "/Users/sepehrakbari/Projects/smallnet/results/camvid_vgg_cp/existing_finetuned_summary.csv",
-    "/Users/sepehrakbari/Projects/smallnet/results/camvid_vgg_cp/cp_finetune_summary.csv",
-    "/Users/sepehrakbari/Projects/smallnet/results/camvid_vgg_cp/profile_summary.csv"
+    "/content/smallnet/results/camvid_vgg_cp/cp_zero_shot_summary.csv",
+    "/content/smallnet/results/camvid_vgg_cp/cp_finetune_summary.csv",
+    "/content/smallnet/results/camvid_vgg_cp/profile_summary.csv"
   ],
   "outputs": {
-    "main_results_csv": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/main_results.csv",
-    "main_results_tex": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/main_results.tex",
-    "profile_results_csv": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/profile_results.csv",
-    "profile_results_tex": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/profile_results.tex",
-    "rank_energy_summary_csv": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/rank_energy_summary.csv",
-    "rank_energy_summary_tex": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/rank_energy_summary.tex",
-    "singular_values_by_mode_csv": "/Users/sepehrakbari/Projects/smallnet/results/paper/tables/singular_values_by_mode.csv",
-    "singular_value_decay_by_mode_pdf": "/Users/sepehrakbari/Projects/smallnet/results/paper/figures/singular_value_decay_by_mode.pdf",
-    "cumulative_energy_by_mode_pdf": "/Users/sepehrakbari/Projects/smallnet/results/paper/figures/cumulative_energy_by_mode.pdf"
+    "main_results_csv": "/content/smallnet/results/paper/tables/main_results.csv",
+    "main_results_tex": "/content/smallnet/results/paper/tables/main_results.tex",
+    "profile_results_csv": "/content/smallnet/results/paper/tables/profile_results.csv",
+    "profile_results_tex": "/content/smallnet/results/paper/tables/profile_results.tex",
+    "miou_vs_target_layer_parameter_ratio_pdf": "/content/smallnet/results/paper/figures/miou_vs_target_layer_parameter_ratio.pdf",
+    "miou_vs_total_parameter_ratio_pdf": "/content/smallnet/results/paper/figures/miou_vs_total_parameter_ratio.pdf",
+    "rank_energy_summary_csv": "/content/smallnet/results/paper/tables/rank_energy_summary.csv",
+    "rank_energy_summary_tex": "/content/smallnet/results/paper/tables/rank_energy_summary.tex",
+    "singular_values_by_mode_csv": "/content/smallnet/results/paper/tables/singular_values_by_mode.csv",
+    "singular_value_decay_by_mode_pdf": "/content/smallnet/results/paper/figures/singular_value_decay_by_mode.pdf",
+    "cumulative_energy_by_mode_pdf": "/content/smallnet/results/paper/figures/cumulative_energy_by_mode.pdf"
   },
   "interpretation_note": "Unfolding rank-energy is a necessary structural diagnostic for CP compression. It does not prove that a CP-rank model will preserve downstream segmentation accuracy."
 }
