@@ -16,7 +16,12 @@ if str(ROOT) not in sys.path:
 import torch
 
 from src.smallnet.config import ensure_dir, load_config
-from src.smallnet.data import load_camvid_class_names, make_camvid_loader
+from src.smallnet.data import (
+    load_camvid_class_names,
+    make_camvid_loader,
+    pairing_rule_from_config,
+    strict_unknown_colors_from_config,
+)
 from src.smallnet.diagnostics import rank_energy_diagnostic
 from src.smallnet.evaluation import evaluate_segmentation
 from src.smallnet.models import load_vgg16_fcn32s_checkpoint
@@ -58,6 +63,14 @@ def run_evaluations(config, device, max_batches=None, num_workers_override=None)
                 batch_size=eval_cfg.get("batch_size", 4),
                 num_workers=eval_cfg.get("num_workers", 2) if num_workers_override is None else num_workers_override,
                 image_size=tuple(eval_cfg.get("image_size", [352, 480])),
+                pairing_rule=pairing_rule_from_config(data_cfg),
+                strict_unknown_colors=strict_unknown_colors_from_config(data_cfg),
+                unknown_color_ignore_index=data_cfg.get("unknown_color_ignore_index"),
+                num_classes=data_cfg.get("num_classes"),
+                ignore_index=data_cfg.get("ignore_index"),
+                ignore_class_name=data_cfg.get("ignore_class_name"),
+                allow_non_contiguous_class_indices=bool(data_cfg.get("allow_non_contiguous_class_indices", False)),
+                required_class_at_index=data_cfg.get("required_class_at_index"),
             )
             hist_all, _ = evaluate_segmentation(
                 model,

@@ -91,7 +91,12 @@ def main():
     image = Image.open(data_root / split / image_name).convert("RGB")
     raw_resized = image.resize((image_size[1], image_size[0]))
     label = Image.open(data_root / f"{split}_labels" / label_name_for_image(image_name)).convert("RGB")
-    dataset = CamVidDataset(data_root / split, data_root / f"{split}_labels", data_root / "class_dict.csv")
+    dataset = CamVidDataset(
+        data_root / split,
+        data_root / f"{split}_labels",
+        data_root / "class_dict.csv",
+        mask_suffix_to_remove="_L",
+    )
     gt = dataset._rgb_to_index(np.array(label))
     gt = np.array(Image.fromarray(gt.astype(np.uint8)).resize((image_size[1], image_size[0]), resample=Image.Resampling.NEAREST))
 

@@ -17,6 +17,7 @@ from src.smallnet.config import load_config
 from src.smallnet.experiment import (
     run_cp_finetune,
     run_cp_zero_shot,
+    run_dataset_validation,
     run_dense_evaluation,
     run_existing_finetuned_evaluation,
     run_profiling,
@@ -26,6 +27,7 @@ from src.smallnet.reproducibility import auto_device
 
 
 STAGES = {
+    "validate-data": [run_dataset_validation],
     "dense": [run_dense_evaluation],
     "zero-shot": [run_cp_zero_shot],
     "eval-finetuned": [run_existing_finetuned_evaluation],

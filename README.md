@@ -25,6 +25,8 @@ claim that the neural layer is simply randomly initialized.
 - `scripts/run_experiment.py`: canonical experiment entrypoint.
 - `configs/camvid_vgg_cp.json`: default reproducible CamVid/VGG/CP config.
 - `configs/camvid_vgg_cp_paper.json`: paper-oriented rank sweep config.
+- `docs/dataset_validation.md`: CamVid pairing, RGB-mask, and validation
+  report workflow.
 - `docs/colab_runbook.md`: Colab/T4 execution and artifact download notes.
 - `tests/`: lightweight tests using synthetic tensors and tiny temporary data.
 - `res/`: historical regenerated result summaries and paper assets.
@@ -48,9 +50,11 @@ data/CamVid/
   test_labels/
 ```
 
-If `test_labels/` is absent, evaluation skips the test split and records the
-skip reason in the JSON metadata. No class is silently ignored. The default
-config explicitly excludes the CamVid `Void` class with `ignore_index: 30`.
+Run dataset validation before regenerating paper results. The loader uses
+explicit image-mask pairing and strict RGB label conversion; it does not fall
+back to positional filename sorting or silently map unknown colors to class
+zero. No class is silently ignored. The default config explicitly excludes the
+CamVid `Void` class with `ignore_index: 30`.
 
 ## Checkpoints
 
@@ -88,6 +92,15 @@ Install dependencies with `uv sync`, then run tests:
 
 ```bash
 uv run python -m pytest
+```
+
+Validate CamVid before any paper experiment:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage validate-data \
+  --device cpu
 ```
 
 Dense baseline evaluation:
@@ -142,6 +155,10 @@ The default output directory is `results/camvid_vgg_cp/`. Each stage writes:
   splits, confusion matrices, and per-class metrics where applicable,
 - `<stage>_summary.csv`: one row per model/split result,
 - `<stage>_config_used.json`: exact run configuration.
+
+The `validate-data` stage writes `dataset_validation_report.json`,
+`dataset_validation_summary.csv`, `dataset_class_counts.csv`, and
+`dataset_validation_config_used.json`; see `docs/dataset_validation.md`.
 
 Metadata includes timestamp, device name, PyTorch version, CUDA availability
 and version, git commit hash, and dirty-worktree status when available.

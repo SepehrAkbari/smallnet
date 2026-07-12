@@ -4,7 +4,21 @@
   "device": null,
   "dataset": {
     "name": "CamVid",
-    "root": "data/CamVid"
+    "source_description": "Full original CamVid dataset available online; exact hosting URL must be supplied by the authors before publication.",
+    "source_url": null,
+    "split_convention": "Repository expects CamVid images in train/val/test and RGB label masks in train_labels/val_labels/test_labels.",
+    "root": "data/CamVid",
+    "num_classes": 32,
+    "ignore_index": 30,
+    "ignore_class_name": "Void",
+    "required_class_at_index": {"index": 30, "name": "Void"},
+    "pairing": {
+      "image_key": "stem",
+      "mask_key": "stem",
+      "mask_suffix_to_remove": "_L"
+    },
+    "unknown_color_policy": "strict",
+    "strict_unknown_colors": true
   },
   "model": {
     "family": "vgg16_fcn32s",

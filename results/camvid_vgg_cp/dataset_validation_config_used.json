@@ -21,7 +21,10 @@
     ],
     "ignore_index": 30,
     "ignore_class_name": "Void",
-    "required_class_at_index": {"index": 30, "name": "Void"},
+    "required_class_at_index": {
+      "index": 30,
+      "name": "Void"
+    },
     "pairing": {
       "image_key": "stem",
       "mask_key": "stem",
@@ -47,16 +50,24 @@
       512
     ],
     "zero_shot_ranks": [
+      32,
       64,
       128,
-      256
+      256,
+      512
     ],
     "fine_tune_ranks": [
       64,
       128,
       256
     ],
-    "profile_ranks": [],
+    "profile_ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
     "seeds": [
       0
     ],
@@ -130,5 +141,6 @@
     "tables_dir": "results/paper/tables",
     "figures_dir": "results/paper/figures",
     "manifest_path": "results/paper/MANIFEST.json"
-  }
+  },
+  "_config_path": "configs/camvid_vgg_cp_paper.json"
 }

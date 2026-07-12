@@ -43,7 +43,13 @@ def eval_decomp(rank):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     dict_path = "data/CamVid/class_dict.csv"
-    val_ds = CamVidDataset("data/CamVid/val", "data/CamVid/val_labels", dict_path, transform=t)
+    val_ds = CamVidDataset(
+        "data/CamVid/val",
+        "data/CamVid/val_labels",
+        dict_path,
+        transform=t,
+        mask_suffix_to_remove="_L",
+    )
     val_loader = DataLoader(val_ds, batch_size=8, shuffle=False)
 
     print("\nEvaluating Zero-Shot Performance")

@@ -58,8 +58,20 @@ def finetune(target_rank, epochs=10, log_file="logs/finetune_results.csv"):
     ])
     
     dict_path = "data/CamVid/class_dict.csv"
-    train_ds = CamVidDataset("data/CamVid/train", "data/CamVid/train_labels", dict_path, transform=t)
-    val_ds = CamVidDataset("data/CamVid/val", "data/CamVid/val_labels", dict_path, transform=t)
+    train_ds = CamVidDataset(
+        "data/CamVid/train",
+        "data/CamVid/train_labels",
+        dict_path,
+        transform=t,
+        mask_suffix_to_remove="_L",
+    )
+    val_ds = CamVidDataset(
+        "data/CamVid/val",
+        "data/CamVid/val_labels",
+        dict_path,
+        transform=t,
+        mask_suffix_to_remove="_L",
+    )
     
     train_loader = DataLoader(train_ds, batch_size=4, shuffle=True, num_workers=2)
     val_loader = DataLoader(val_ds, batch_size=4, shuffle=False)

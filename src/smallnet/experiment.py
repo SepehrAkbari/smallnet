@@ -9,7 +9,15 @@ import torch
 import torch.nn as nn
 
 from src.smallnet.config import ensure_dir
-from src.smallnet.data import camvid_split_available, load_camvid_class_names, make_camvid_loader
+from src.smallnet.data import (
+    camvid_split_available,
+    class_validation_options,
+    load_camvid_class_names,
+    make_camvid_loader,
+    pairing_rule_from_config,
+    strict_unknown_colors_from_config,
+    validate_camvid_data,
+)
 from src.smallnet.diagnostics import rank_energy_diagnostic
 from src.smallnet.evaluation import evaluate_segmentation
 from src.smallnet.factorization import build_factorized_model_from_dense
@@ -182,6 +190,7 @@ def load_existing_cp_model(config, checkpoint_path, rank=None):
 def loader_for_split(config, root, split, shuffle=False):
     train_cfg = training_config(config)
     eval_cfg = eval_config(config)
+    data_cfg = dataset_config(config)
     return make_camvid_loader(
         data_root(config, root),
         split=split,
@@ -190,7 +199,28 @@ def loader_for_split(config, root, split, shuffle=False):
         image_size=image_size(config),
         class_dict_path=class_dict_path(config, root),
         shuffle=shuffle,
+        pairing_rule=pairing_rule_from_config(data_cfg),
+        strict_unknown_colors=strict_unknown_colors_from_config(data_cfg),
+        unknown_color_ignore_index=data_cfg.get("unknown_color_ignore_index"),
+        num_classes=data_cfg.get("num_classes"),
+        ignore_index=data_cfg.get("ignore_index"),
+        ignore_class_name=data_cfg.get("ignore_class_name"),
+        allow_non_contiguous_class_indices=bool(data_cfg.get("allow_non_contiguous_class_indices", False)),
+        required_class_at_index=data_cfg.get("required_class_at_index"),
     )
+
+
+def run_dataset_validation(config, root, device=None, max_batches=None):
+    stage = "dataset_validation"
+    output_dir = experiment_output_dir(config, root)
+    save_config_snapshot(output_dir / f"{stage}_config_used.json", config)
+    report, summary_rows, class_count_rows = validate_camvid_data(config, root)
+    report_path = save_manifest(output_dir / f"{stage}_report.json", report, device=device)
+    write_csv(output_dir / f"{stage}_summary.csv", summary_rows)
+    write_csv(output_dir / "dataset_class_counts.csv", class_count_rows)
+    if report["status"] != "pass":
+        raise RuntimeError(f"Dataset validation failed; see {report_path}")
+    return report_path
 
 
 def evaluate_splits(

@@ -1,79 +1,8 @@
 '''
-CamVid Dataset Loader.
+Backward-compatible CamVid dataset import.
 '''
 
-import os
-import csv
-import torch
-import numpy as np
-from torch.utils.data import Dataset
-from PIL import Image
+from src.smallnet.data import CamVidDataset
 
 
-class CamVidDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, class_dict_path, transform=None, image_size=(352, 480)):
-        self.images_dir = images_dir
-        self.masks_dir = masks_dir
-        self.transform = transform
-        self.image_size = tuple(image_size)
-        self.images = sorted([f for f in os.listdir(images_dir) if self._is_image_file(f)])
-        self.masks = sorted([f for f in os.listdir(masks_dir) if self._is_image_file(f)])
-        if len(self.images) != len(self.masks):
-            raise ValueError(
-                f"Image/mask count mismatch: {images_dir} has {len(self.images)} images, "
-                f"{masks_dir} has {len(self.masks)} masks"
-            )
-
-        self.color_to_index = self._load_color_map(class_dict_path)
-
-    @staticmethod
-    def _is_image_file(filename):
-        return (
-            filename.lower().endswith(('.png', '.jpg', '.jpeg'))
-            and not filename.startswith('.')
-            and not filename.startswith('._')
-        )
-
-    def _load_color_map(self, path):
-        color_to_idx = {}
-        with open(path, 'r') as f:
-            reader = csv.reader(f)
-            next(reader) # Skip the header row
-            for idx, row in enumerate(reader):
-                r, g, b = int(row[1]), int(row[2]), int(row[3])
-                color_to_idx[(r, g, b)] = idx
-        return color_to_idx
-
-    def _rgb_to_index(self, mask_np):
-        index_mask = np.zeros((mask_np.shape[0], mask_np.shape[1]), dtype=np.int64)
-        
-        for rgb, idx in self.color_to_index.items():
-            matches = (mask_np == rgb).all(axis=-1)
-            index_mask[matches] = idx
-            
-        return index_mask
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, idx):
-        img_path = os.path.join(self.images_dir, self.images[idx])
-        mask_path = os.path.join(self.masks_dir, self.masks[idx])
-        
-        image = Image.open(img_path).convert("RGB")
-        mask = Image.open(mask_path).convert("RGB")
-        
-        if self.transform:
-            image = self.transform(image)
-        
-        mask_np = np.array(mask)
-        index_mask = self._rgb_to_index(mask_np)
-        mask_tensor = torch.from_numpy(index_mask).long()
-        
-        mask_tensor = torch.nn.functional.interpolate(
-            mask_tensor.unsqueeze(0).unsqueeze(0).float(), 
-            size=self.image_size,
-            mode='nearest'
-        ).squeeze().long()
-
-        return image, mask_tensor
+__all__ = ["CamVidDataset"]

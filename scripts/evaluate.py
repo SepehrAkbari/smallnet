@@ -78,6 +78,8 @@ def make_camvid_loader(data_root, split, batch_size, num_workers, image_size):
         data_root / f"{split}_labels",
         data_root / "class_dict.csv",
         transform=transform,
+        image_size=image_size,
+        mask_suffix_to_remove="_L",
     )
     return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
