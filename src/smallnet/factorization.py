@@ -30,6 +30,17 @@ class MatrixLowRankConv2d(nn.Sequential):
 
         unfolded = weight.reshape(out_channels, -1)
         u, s, vh = torch.linalg.svd(unfolded, full_matrices=False)
+        return cls.from_svd(conv, rank, u, s, vh)
+
+    @classmethod
+    def from_svd(cls, conv, rank, u, s, vh):
+        '''Build the two-convolution baseline from a precomputed output-mode SVD.'''
+        if conv.groups != 1:
+            raise ValueError("MatrixLowRankConv2d currently supports groups=1 only")
+
+        out_channels, in_channels, kh, kw = conv.weight.shape
+        max_rank = min(out_channels, in_channels * kh * kw, len(s))
+        rank = min(int(rank), max_rank)
         sqrt_s = torch.sqrt(s[:rank])
 
         first = nn.Conv2d(
@@ -49,6 +60,15 @@ class MatrixLowRankConv2d(nn.Sequential):
             second.bias.data.copy_(conv.bias.detach().cpu())
 
         return cls(first, second)
+
+    def composed_kernel(self):
+        '''Return the exact dense kernel represented by the two convolutions.'''
+        first, second = self
+        out_channels, rank = second.weight.shape[:2]
+        return torch.matmul(
+            second.weight.reshape(out_channels, rank),
+            first.weight.reshape(rank, -1),
+        ).reshape(out_channels, first.in_channels, *first.kernel_size)
 
 
 def factorized_conv_from_conv(conv, rank, factorization="cp", init="random", n_iter_max=0):

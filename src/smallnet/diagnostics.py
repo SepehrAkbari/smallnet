@@ -68,7 +68,13 @@ def cp_lower_bound_tail(weight, rank, modes=(0, 1, 2, 3)):
     }
 
 
-def rank_energy_diagnostic(weight, modes=(0, 1, 2, 3), thresholds=(0.9, 0.95, 0.99), fixed_ranks=(64, 128, 256)):
+def rank_energy_diagnostic(
+    weight,
+    modes=(0, 1, 2, 3),
+    thresholds=(0.9, 0.95, 0.99),
+    fixed_ranks=(64, 128, 256),
+    precomputed_singular_values=None,
+):
     per_mode = {}
     threshold_ranks = {f"{threshold:.3f}": [] for threshold in thresholds}
     fixed_rank_tails = {str(rank): [] for rank in fixed_ranks}
@@ -76,7 +82,12 @@ def rank_energy_diagnostic(weight, modes=(0, 1, 2, 3), thresholds=(0.9, 0.95, 0.
     for mode in modes:
         if mode < 0 or mode >= weight.ndim:
             continue
-        values, cumulative = spectrum_for_mode(weight, mode)
+        precomputed = (precomputed_singular_values or {}).get(mode)
+        if precomputed is None:
+            values, cumulative = spectrum_for_mode(weight, mode)
+        else:
+            values = np.asarray(precomputed, dtype=np.float64)
+            cumulative = cumulative_energy_from_singular_values(values)
         mode_record = {
             "matrix_shape": list(unfold_tensor(weight, mode).shape),
             "singular_values": values.tolist(),

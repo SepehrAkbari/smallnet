@@ -2,6 +2,11 @@
 Canonical CamVid/VGG/CP experiment pipeline.
 '''
 
+import csv
+import gc
+import importlib.metadata
+import json
+import resource
 from copy import deepcopy
 from pathlib import Path
 
@@ -18,17 +23,34 @@ from src.smallnet.data import (
     pairing_rule_from_config,
     strict_unknown_colors_from_config,
     validate_camvid_data,
+    sha256_file,
 )
 from src.smallnet.diagnostics import rank_energy_diagnostic
 from src.smallnet.evaluation import evaluate_segmentation
-from src.smallnet.factorization import build_factorized_model_from_dense
+from src.smallnet.factorization import MatrixLowRankConv2d, build_factorized_model_from_dense
 from src.smallnet.models import build_vgg16_fcn32s, load_vgg16_fcn32s_checkpoint
 from src.smallnet.mask_forensics import aggregate_unknown_colors_by_file, inspect_mask_forensics
-from src.smallnet.modules import count_parameters, get_module
+from src.smallnet.modules import count_parameters, get_module, set_module
 from src.smallnet.paper import write_rank_energy_artifacts
 from src.smallnet.profiling import latency_stats, manual_macs
 from src.smallnet.reproducibility import device_name, set_seed
 from src.smallnet.results import save_config_snapshot, save_manifest, write_csv
+from src.smallnet.structural import (
+    aggregate_cp_reconstruction_rows,
+    cp_conv_parameter_count,
+    dense_conv_parameter_count,
+    exploratory_correlations,
+    fit_cp_approximation,
+    join_structural_tradeoffs,
+    matrix_svd_conv_parameter_count,
+    normalized_frobenius_residual,
+    output_mode_svd,
+    reconstruction_rows_for_conv,
+    representation_macs,
+    write_reconstruction_figure,
+    write_unfolding_energy_figure,
+    write_zero_shot_figure,
+)
 
 
 def resolve_path(path, root):
@@ -72,6 +94,10 @@ def profile_config(config):
 
 def rank_config(config):
     return config.get("rank_diagnostics", {})
+
+
+def reconstruction_config(config):
+    return config.get("reconstruction", {})
 
 
 def existing_finetuned_config(config):
@@ -761,6 +787,404 @@ def run_rank_diagnostics(config, root, device=None):
                 "Unfolding rank-energy is a necessary structural diagnostic for CP compression, "
                 "not proof that a CP-rank model will preserve downstream accuracy."
             ),
+        },
+        device=device,
+    )
+
+
+def _software_versions():
+    versions = {}
+    for distribution in ("torch", "torchvision", "tensorly", "tensorly-torch", "numpy", "pandas"):
+        try:
+            versions[distribution] = importlib.metadata.version(distribution)
+        except importlib.metadata.PackageNotFoundError:
+            versions[distribution] = None
+    return versions
+
+
+def _paper_figures_dir(config, root):
+    return ensure_dir(resolve_path(config.get("paper", {}).get("figures_dir", "results/paper/figures"), root))
+
+
+def _reconstruction_conv(config, root):
+    recon_cfg = reconstruction_config(config)
+    synthetic_shape = recon_cfg.get("synthetic_tensor_shape")
+    if synthetic_shape:
+        cout, cin, kh, kw = map(int, synthetic_shape)
+        set_seed(int(recon_cfg.get("synthetic_seed", 123)), deterministic=True)
+        return nn.Conv2d(cin, cout, (kh, kw), bias=bool(recon_cfg.get("synthetic_bias", True)))
+    model = load_dense_model(config, root)
+    layer = get_module(model, model_config(config).get("target_layer", "classifier.0"))
+    if not isinstance(layer, nn.Conv2d):
+        raise TypeError(f"Reconstruction target must be nn.Conv2d, got {type(layer)}")
+    return layer
+
+
+def run_reconstruction(config, root, device, max_batches=None):
+    '''Run exact spectral, CP, and output-unfolding matrix-SVD diagnostics.'''
+    stage = "reconstruction"
+    output_dir = prepare_run_outputs(config, root, stage)
+    recon_cfg = reconstruction_config(config)
+    canonical_ranks = [int(value) for value in recon_cfg.get("ranks", cp_config(config).get("ranks", [32, 64, 128, 256, 512]))]
+    canonical_seeds = [int(value) for value in recon_cfg.get("seeds", [0, 1, 2])]
+    ranks = [int(value) for value in recon_cfg.get("execution_ranks", canonical_ranks)]
+    seeds = [int(value) for value in recon_cfg.get("execution_seeds", canonical_seeds)]
+    init = recon_cfg.get("init", cp_config(config).get("init", "random"))
+    n_iter_max = int(recon_cfg.get("n_iter_max", cp_config(config).get("n_iter_max", 10)))
+    tolerance = float(recon_cfg.get("numerical_tolerance", 1e-5))
+    memory_efficient_mttkrp = bool(recon_cfg.get("memory_efficient_mttkrp", True))
+    mttkrp_rank_chunk_size = int(recon_cfg.get("mttkrp_rank_chunk_size", 64))
+    mttkrp_max_explicit_bytes = int(recon_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2))
+    summary_path = output_dir / "reconstruction_summary.csv"
+    persisted_rows = {}
+    if summary_path.is_file():
+        for row in _read_reconstruction_rows(summary_path):
+            key = (row.get("method", ""), row.get("rank", ""), row.get("seed", ""))
+            persisted_rows[key] = row
+
+    def persist(rows):
+        for row in rows:
+            key = (str(row.get("method", "")), str(row.get("rank", "")), str(row.get("seed", "")))
+            previous = persisted_rows.get(key)
+            if previous and previous.get("status") == "completed" and row.get("status") == "failed":
+                continue
+            persisted_rows[key] = row
+        write_csv(summary_path, persisted_rows.values())
+
+    conv = _reconstruction_conv(config, root)
+    rows, aggregates, diagnostic, failures = reconstruction_rows_for_conv(
+        conv,
+        ranks,
+        seeds,
+        init,
+        n_iter_max,
+        device,
+        tolerance=tolerance,
+        memory_efficient_mttkrp=memory_efficient_mttkrp,
+        mttkrp_rank_chunk_size=mttkrp_rank_chunk_size,
+        mttkrp_max_explicit_bytes=mttkrp_max_explicit_bytes,
+        on_update=persist,
+    )
+    rows = list(persisted_rows.values())
+    aggregates = aggregate_cp_reconstruction_rows(rows)
+    write_csv(output_dir / "reconstruction_rank_summary.csv", aggregates)
+    figures = [
+        *write_unfolding_energy_figure(diagnostic, canonical_ranks, _paper_figures_dir(config, root)),
+        *write_reconstruction_figure(rows, _paper_figures_dir(config, root)),
+    ]
+    metadata_path = save_manifest(
+        output_dir / "reconstruction_metadata.json",
+        {
+            "kind": "structural_reconstruction_diagnostics",
+            "experiment_id": config.get("experiment_id"),
+            "dense_checkpoint": "synthetic" if reconstruction_config(config).get("synthetic_tensor_shape") else str(dense_checkpoint_path(config, root)),
+            "dense_checkpoint_sha256": "" if reconstruction_config(config).get("synthetic_tensor_shape") else sha256_file(dense_checkpoint_path(config, root)),
+            "target_layer": model_config(config).get("target_layer", "classifier.0"),
+            "canonical_ranks": canonical_ranks,
+            "canonical_cp_seeds": canonical_seeds,
+            "execution_ranks": ranks,
+            "execution_cp_seeds": seeds,
+            "cp_initializer": init,
+            "cp_n_iter_max": n_iter_max,
+            "memory_efficient_mttkrp": memory_efficient_mttkrp,
+            "mttkrp_rank_chunk_size": mttkrp_rank_chunk_size,
+            "mttkrp_max_explicit_bytes": mttkrp_max_explicit_bytes,
+            "numerical_tolerance": tolerance,
+            "device_requested_and_used_for_cp_fitting": device.type,
+            "non_output_mode_spectral_device": "cpu",
+            "output_mode_matrix_svd_device": diagnostic.get("output_mode_matrix_svd_device", "cpu"),
+            "deterministic_settings": [row.get("seed_status") for row in rows if row.get("method") == "cp" and row.get("status") == "completed"],
+            "software_versions": _software_versions(),
+            "diagnostic": diagnostic,
+            "cp_rank_aggregates": aggregates,
+            "failures": failures,
+            "convergence_metadata_note": (
+                "tensorly-torch 0.5 does not expose per-iteration loss history through FactorizedConv.from_conv; "
+                "completed CP rows therefore record the requested iteration budget and explicitly mark actual "
+                "iterations and convergence certification as unavailable."
+            ),
+            "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+            "paper_figure_outputs": figures,
+        },
+        device=device,
+    )
+    del conv
+    gc.collect()
+    return metadata_path
+
+
+def _read_reconstruction_rows(path):
+    with open(path, newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _reconstruction_lookup(rows):
+    lookup = {}
+    for row in rows:
+        if row.get("status") != "completed":
+            continue
+        seed = row.get("seed", "")
+        if seed.endswith(".0"):
+            seed = seed[:-2]
+        lookup[(row["method"], str(int(float(row["rank"]))), seed)] = row
+    return lookup
+
+
+def _structural_eval_rows(raw_rows, method, rank, seed, common):
+    output = []
+    for row in raw_rows:
+        output.append(
+            {
+                "method": method,
+                "rank": rank,
+                "seed": seed,
+                "split": row["split"],
+                "status": "completed",
+                "present_class_miou": row["mean_iou_present_classes"],
+                "all_class_miou": row["mean_iou_all_classes"],
+                "pixel_accuracy": row["pixel_accuracy"],
+                "frequency_weighted_iou": row["frequency_weighted_iou"],
+                **common,
+            }
+        )
+    return output
+
+
+def run_structural_zero_shot(config, root, device, max_batches=None):
+    '''Evaluate dense, fitted CP, and matrix-SVD models under the validated mask policy.'''
+    stage = "structural_zero_shot"
+    output_dir = prepare_run_outputs(config, root, stage)
+    reconstruction_path = output_dir / "reconstruction_summary.csv"
+    if not reconstruction_path.is_file():
+        raise FileNotFoundError(
+            f"{reconstruction_path} is required; complete --stage reconstruction first"
+        )
+    reconstruction_rows = _read_reconstruction_rows(reconstruction_path)
+    lookup = _reconstruction_lookup(reconstruction_rows)
+    recon_cfg = reconstruction_config(config)
+    canonical_ranks = [int(value) for value in recon_cfg.get("ranks", cp_config(config).get("ranks", []))]
+    canonical_seeds = [int(value) for value in recon_cfg.get("seeds", [0, 1, 2])]
+    ranks = [int(value) for value in recon_cfg.get("execution_ranks", canonical_ranks)]
+    seeds = [int(value) for value in recon_cfg.get("execution_seeds", canonical_seeds)]
+    tolerance = float(recon_cfg.get("residual_reproduction_tolerance", 1e-5))
+    init = recon_cfg.get("init", cp_config(config).get("init", "random"))
+    n_iter_max = int(recon_cfg.get("n_iter_max", cp_config(config).get("n_iter_max", 10)))
+    memory_efficient_mttkrp = bool(recon_cfg.get("memory_efficient_mttkrp", True))
+    mttkrp_rank_chunk_size = int(recon_cfg.get("mttkrp_rank_chunk_size", 64))
+    mttkrp_max_explicit_bytes = int(recon_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2))
+    summary_path = output_dir / "structural_zero_shot_summary.csv"
+    validation_report = output_dir / "dataset_validation_report.json"
+    if not validation_report.is_file():
+        raise FileNotFoundError(f"Validated dataset report is missing: {validation_report}")
+    with open(validation_report) as handle:
+        validation_payload = json.load(handle)
+    expected_unknown_pixels = dataset_config(config).get("unknown_color_resolution", {}).get("affected_pixel_count")
+    if validation_payload.get("status") != "pass":
+        raise RuntimeError(f"Dataset validation report is not passing: {validation_report}")
+    if expected_unknown_pixels is not None and int(validation_payload.get("unknown_pixels_mapped_to_ignore", -1)) != int(expected_unknown_pixels):
+        raise RuntimeError(
+            "Dataset validation report does not match the configured approved unknown-pixel count: "
+            f"{validation_payload.get('unknown_pixels_mapped_to_ignore')} != {expected_unknown_pixels}"
+        )
+    if validation_payload.get("unknown_color_ignore_index") != dataset_config(config).get("ignore_index"):
+        raise RuntimeError("Dataset validation report does not map unknown RGB pixels to the configured ignore index")
+    validation_report_reference = str(validation_report)
+    validation_report_sha256 = sha256_file(validation_report)
+    checkpoint = dense_checkpoint_path(config, root)
+    checkpoint_sha256 = sha256_file(checkpoint)
+    parameter_ref = parameter_reference(config, root)
+    target_layer = parameter_ref["target_layer"]
+    persisted_evaluations = {}
+    if summary_path.is_file():
+        with open(summary_path, newline="") as handle:
+            for row in csv.DictReader(handle):
+                key = (row.get("method", ""), row.get("rank", ""), row.get("seed", ""), row.get("split", ""))
+                persisted_evaluations[key] = row
+
+    def persist_evaluations(new_rows):
+        for row in new_rows:
+            key = tuple(str(row.get(field, "")) for field in ("method", "rank", "seed", "split"))
+            persisted_evaluations[key] = row
+        write_csv(summary_path, persisted_evaluations.values())
+
+    failures = []
+
+    dense_model = load_dense_model(config, root)
+    dense_conv = get_module(dense_model, target_layer)
+    weight = dense_conv.weight.detach().cpu()
+    shape = tuple(weight.shape)
+    dense_target_parameters = dense_conv_parameter_count(shape, dense_conv.bias is not None)
+    h, w = image_size(config)
+    input_size = tuple(profile_config(config).get("input_size", [1, 3, h, w]))
+    dense_full_macs, dense_records = manual_macs(dense_model.to(device), input_size, device=device)
+    target_records = [record for record in dense_records if record["name"] == target_layer]
+    if len(target_records) != 1:
+        raise RuntimeError(f"Expected one MAC record for {target_layer}, found {len(target_records)}")
+    target_output_shape = target_records[0]["output_shape"]
+    output_spatial_elements = int(target_output_shape[0] * target_output_shape[2] * target_output_shape[3])
+    dense_target_macs = representation_macs(shape, None, "dense", output_spatial_elements)
+    dense_eval, _, skipped = evaluate_splits(
+        dense_model,
+        config,
+        root,
+        device,
+        label="dense_structural_reference",
+        rank="",
+        max_batches=max_batches,
+        model_kind="dense",
+        checkpoint=str(checkpoint),
+        parameter_ref=parameter_ref,
+    )
+    dense_common = {
+        "target_layer_parameter_count": dense_target_parameters,
+        "dense_target_layer_parameter_count": dense_target_parameters,
+        "full_model_parameter_count": parameter_ref["dense_total_parameters"],
+        "target_layer_macs": dense_target_macs,
+        "full_model_macs": dense_full_macs,
+        "actual_relative_squared_frobenius_error": 0.0,
+        "actual_relative_frobenius_error": 0.0,
+        "max_unfolding_tail_bound_squared": 0.0,
+        "output_mode_tail_bound_squared": 0.0,
+        "dataset_validation_report_reference": validation_report_reference,
+        "dataset_validation_report_sha256": validation_report_sha256,
+        "checkpoint_sha256": checkpoint_sha256,
+        "model_kind": "dense",
+    }
+    persist_evaluations(_structural_eval_rows(dense_eval, "dense", "", "", dense_common))
+    del dense_model
+    gc.collect()
+
+    u, s, vh, _, _ = output_mode_svd(weight, device=device)
+    for rank in ranks:
+        key = ("matrix_svd_output_unfolding", str(rank), "")
+        source = lookup.get(key)
+        if source is None:
+            failures.append({"method": key[0], "rank": rank, "seed": "", "exception": "missing successful reconstruction row"})
+            continue
+        try:
+            model = load_dense_model(config, root)
+            conv = get_module(model, target_layer)
+            replacement = MatrixLowRankConv2d.from_svd(conv, rank, u, s, vh)
+            set_module(model, target_layer, replacement)
+            raw, _, method_skips = evaluate_splits(
+                model, config, root, device, f"matrix_svd_rank_{rank}_zero_shot", rank,
+                max_batches=max_batches, model_kind="matrix_svd_output_unfolding_zero_shot",
+                checkpoint=str(checkpoint), parameter_ref=parameter_ref,
+            )
+            skipped.extend(method_skips)
+            target_parameters = matrix_svd_conv_parameter_count(shape, rank, conv.bias is not None)
+            target_macs = representation_macs(shape, rank, "matrix_svd_output_unfolding", output_spatial_elements)
+            common = {
+                "target_layer_parameter_count": target_parameters,
+                "dense_target_layer_parameter_count": dense_target_parameters,
+                "full_model_parameter_count": parameter_ref["dense_total_parameters"] - dense_target_parameters + target_parameters,
+                "target_layer_macs": target_macs,
+                "full_model_macs": dense_full_macs - dense_target_macs + target_macs,
+                "actual_relative_squared_frobenius_error": source["actual_relative_squared_frobenius_error"],
+                "actual_relative_frobenius_error": source["actual_relative_frobenius_error"],
+                "max_unfolding_tail_bound_squared": source["max_unfolding_tail_bound_squared"],
+                "output_mode_tail_bound_squared": source["output_mode_tail_bound_squared"],
+                "dataset_validation_report_reference": validation_report_reference,
+                "dataset_validation_report_sha256": validation_report_sha256,
+                "checkpoint_sha256": checkpoint_sha256,
+                "model_kind": "matrix_svd_output_unfolding_zero_shot",
+            }
+            persist_evaluations(_structural_eval_rows(raw, key[0], rank, "", common))
+            del model, replacement
+        except Exception as exc:
+            failures.append({"method": key[0], "rank": rank, "seed": "", "exception": repr(exc)})
+        gc.collect()
+    del u, s, vh
+    gc.collect()
+
+    for rank in ranks:
+        for seed in seeds:
+            key = ("cp", str(rank), str(seed))
+            source = lookup.get(key)
+            if source is None:
+                failures.append({"method": "cp", "rank": rank, "seed": seed, "exception": "missing successful reconstruction row"})
+                continue
+            try:
+                set_seed(seed, deterministic=True)
+                model = load_dense_model(config, root)
+                conv = get_module(model, target_layer)
+                fitted, approximation, _, _ = fit_cp_approximation(
+                    conv,
+                    rank,
+                    seed,
+                    init,
+                    n_iter_max,
+                    device,
+                    memory_efficient_mttkrp,
+                    mttkrp_rank_chunk_size,
+                    mttkrp_max_explicit_bytes,
+                )
+                squared, ordinary = normalized_frobenius_residual(weight, approximation)
+                expected = float(source["actual_relative_squared_frobenius_error"])
+                if abs(squared - expected) > tolerance:
+                    raise AssertionError(f"Re-fitted CP residual {squared} differs from reconstruction-stage value {expected}")
+                set_module(model, target_layer, fitted)
+                raw, _, method_skips = evaluate_splits(
+                    model, config, root, device, f"cp_rank_{rank}_seed_{seed}_structural_zero_shot", rank,
+                    max_batches=max_batches, model_kind="cp_structural_zero_shot",
+                    checkpoint=str(checkpoint), parameter_ref=parameter_ref,
+                )
+                skipped.extend(method_skips)
+                target_parameters = cp_conv_parameter_count(shape, rank, conv.bias is not None)
+                target_macs = representation_macs(shape, rank, "cp", output_spatial_elements)
+                common = {
+                    "target_layer_parameter_count": target_parameters,
+                    "dense_target_layer_parameter_count": dense_target_parameters,
+                    "full_model_parameter_count": parameter_ref["dense_total_parameters"] - dense_target_parameters + target_parameters,
+                    "target_layer_macs": target_macs,
+                    "full_model_macs": dense_full_macs - dense_target_macs + target_macs,
+                    "actual_relative_squared_frobenius_error": squared,
+                    "actual_relative_frobenius_error": ordinary,
+                    "max_unfolding_tail_bound_squared": source["max_unfolding_tail_bound_squared"],
+                    "output_mode_tail_bound_squared": source["output_mode_tail_bound_squared"],
+                    "dataset_validation_report_reference": validation_report_reference,
+                    "dataset_validation_report_sha256": validation_report_sha256,
+                    "checkpoint_sha256": checkpoint_sha256,
+                    "model_kind": "cp_structural_zero_shot",
+                }
+                persist_evaluations(_structural_eval_rows(raw, "cp", rank, seed, common))
+                del model, fitted, approximation
+            except Exception as exc:
+                failures.append({"method": "cp", "rank": rank, "seed": seed, "exception": repr(exc)})
+            gc.collect()
+
+    all_rows = list(persisted_evaluations.values())
+    tradeoff_rows = join_structural_tradeoffs(reconstruction_rows, all_rows)
+    tradeoff_path = output_dir / "structural_tradeoff_summary.csv"
+    write_csv(tradeoff_path, tradeoff_rows)
+    correlations = exploratory_correlations(tradeoff_rows)
+    correlation_path = save_manifest(
+        output_dir / "structural_tradeoff_correlations.json",
+        {"kind": "exploratory_structural_correlations", **correlations},
+        device=device,
+    )
+    figure_outputs = write_zero_shot_figure(all_rows, _paper_figures_dir(config, root), split="test")
+    return save_manifest(
+        output_dir / "structural_zero_shot_metadata.json",
+        {
+            "kind": "structural_zero_shot_evaluation",
+            "experiment_id": config.get("experiment_id"),
+            "canonical_ranks": canonical_ranks,
+            "canonical_cp_seeds": canonical_seeds,
+            "execution_ranks": ranks,
+            "execution_cp_seeds": seeds,
+            "dataset_validation_report_reference": validation_report_reference,
+            "dataset_validation_report_sha256": validation_report_sha256,
+            "dense_checkpoint": str(checkpoint),
+            "dense_checkpoint_sha256": checkpoint_sha256,
+            "reconstruction_summary_reference": str(reconstruction_path),
+            "tradeoff_summary_reference": str(tradeoff_path),
+            "exploratory_correlations_reference": str(correlation_path),
+            "figure_outputs": figure_outputs,
+            "failures": failures,
+            "skipped_splits": skipped,
+            "software_versions": _software_versions(),
+            "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
         },
         device=device,
     )

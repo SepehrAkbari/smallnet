@@ -22,6 +22,8 @@ from src.smallnet.experiment import (
     run_existing_finetuned_evaluation,
     run_profiling,
     run_rank_diagnostics,
+    run_reconstruction,
+    run_structural_zero_shot,
 )
 from src.smallnet.reproducibility import auto_device
 
@@ -34,6 +36,8 @@ STAGES = {
     "finetune": [run_cp_finetune],
     "profile": [run_profiling],
     "rank": [run_rank_diagnostics],
+    "reconstruction": [run_reconstruction],
+    "structural-zero-shot": [run_structural_zero_shot],
     "full": [
         run_dense_evaluation,
         run_cp_zero_shot,
@@ -52,6 +56,13 @@ def parse_args():
     parser.add_argument("--device", default=None, help="Override config device, e.g. cpu, cuda, mps.")
     parser.add_argument("--output-dir", default=None, help="Override config output_dir.")
     parser.add_argument("--max-batches", type=int, default=None, help="Optional smoke-test limit for evaluation.")
+    parser.add_argument(
+        "--synthetic-smoke",
+        action="store_true",
+        help="Run reconstruction on a small deterministic synthetic Conv2d without CamVid or a checkpoint.",
+    )
+    parser.add_argument("--ranks", nargs="+", type=int, help="Optional reconstruction/structural rank subset.")
+    parser.add_argument("--seeds", nargs="+", type=int, help="Optional reconstruction/structural CP seed subset.")
     return parser.parse_args()
 
 
@@ -60,6 +71,26 @@ def main():
     config = load_config(args.config)
     if args.output_dir:
         config["output_dir"] = args.output_dir
+    if args.ranks:
+        config.setdefault("reconstruction", {})["execution_ranks"] = args.ranks
+    if args.seeds:
+        config.setdefault("reconstruction", {})["execution_seeds"] = args.seeds
+    if args.synthetic_smoke:
+        if args.stage != "reconstruction":
+            raise ValueError("--synthetic-smoke is supported only with --stage reconstruction")
+        if not args.output_dir:
+            config["output_dir"] = "results/camvid_vgg_cp/synthetic_reconstruction_smoke"
+        config.setdefault("paper", {})["figures_dir"] = (
+            f"{config['output_dir']}/figures"
+        )
+        config.setdefault("reconstruction", {}).update(
+            {
+                "synthetic_tensor_shape": [8, 6, 3, 3],
+                "synthetic_seed": 123,
+                "ranks": [1, 2, 4],
+                "seeds": [0, 1, 2],
+            }
+        )
     device = auto_device(args.device or config.get("device"))
 
     outputs = []
