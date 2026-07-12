@@ -202,9 +202,24 @@ def pairing_rule_from_config(dataset_cfg):
 
 
 def strict_unknown_colors_from_config(dataset_cfg):
+    policy = dataset_cfg.get("unknown_color_policy", "strict")
+    if policy not in {"strict", "map_to_ignore"}:
+        raise ValueError(
+            "dataset.unknown_color_policy must be 'strict' or 'map_to_ignore'; "
+            "nearest-color assignment and class-zero fallback are not implemented"
+        )
     if "strict_unknown_colors" in dataset_cfg:
-        return bool(dataset_cfg["strict_unknown_colors"])
-    return dataset_cfg.get("unknown_color_policy", "strict") == "strict"
+        configured = bool(dataset_cfg["strict_unknown_colors"])
+        if configured != (policy == "strict"):
+            raise ValueError("dataset.strict_unknown_colors conflicts with dataset.unknown_color_policy")
+    if policy == "map_to_ignore":
+        ignore_index = dataset_cfg.get("ignore_index")
+        mapping_index = dataset_cfg.get("unknown_color_ignore_index")
+        if ignore_index is None or mapping_index is None or int(mapping_index) != int(ignore_index):
+            raise ValueError(
+                "map_to_ignore requires dataset.unknown_color_ignore_index to equal the explicitly configured ignore_index"
+            )
+    return policy == "strict"
 
 
 def normalize_pairing_key(path, *, kind, mask_suffix_to_remove=None):
@@ -679,6 +694,8 @@ def validate_camvid_data(config, root):
         split_reports.append(split_report)
 
     status = "fail" if class_errors or any(split["errors"] for split in split_reports) else "pass"
+    unknown_pixel_count = sum(item["pixel_count"] for item in all_unknown)
+    unknown_policy = dataset_cfg.get("unknown_color_policy", "strict")
     report = {
         "schema": "smallnet.dataset_validation.v1",
         "status": status,
@@ -686,6 +703,7 @@ def validate_camvid_data(config, root):
             "name": dataset_cfg.get("name"),
             "source_description": dataset_cfg.get("source_description"),
             "source_url": dataset_cfg.get("source_url"),
+            "source_archive_identifier": dataset_cfg.get("source_archive_identifier"),
         },
         "split_convention": dataset_cfg.get("split_convention"),
         "class_dict_path": str(class_path),
@@ -695,7 +713,11 @@ def validate_camvid_data(config, root):
         "ignore_index": ignore_index,
         "ignore_class_name": dataset_cfg.get("ignore_class_name"),
         "pairing_rule": pairing_rule,
+        "unknown_color_policy": unknown_policy,
         "strict_unknown_colors": strict_unknown_colors,
+        "unknown_color_ignore_index": dataset_cfg.get("unknown_color_ignore_index"),
+        "unknown_color_resolution": dataset_cfg.get("unknown_color_resolution"),
+        "unknown_pixels_mapped_to_ignore": unknown_pixel_count if unknown_policy == "map_to_ignore" else 0,
         "class_dictionary_errors": class_errors,
         "splits": split_reports,
         "unknown_rgb_values": all_unknown,

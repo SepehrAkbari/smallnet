@@ -1,7 +1,7 @@
 {
   "schema": "smallnet.dataset_validation.v1",
   "environment": {
-    "created_utc": "2026-07-12T20:11:30.009639+00:00",
+    "created_utc": "2026-07-12T22:07:09.053869+00:00",
     "python": "3.12.10",
     "platform": "macOS-26.3-arm64-arm-64bit",
     "torch": "2.12.0",
@@ -11,14 +11,15 @@
     "mps_available": true,
     "device": "cpu",
     "device_name": "CPU",
-    "git_commit": "583fa6699cdb130ec87091f4399cddda9dab9fcd",
+    "git_commit": "93236d67a84ef9b76d6e81dd0e7f0df94b5dff78",
     "git_dirty": true
   },
-  "status": "fail",
+  "status": "pass",
   "dataset_source": {
     "name": "CamVid",
     "source_description": "Full original CamVid dataset available online; exact hosting URL must be supplied by the authors before publication.",
-    "source_url": null
+    "source_url": null,
+    "source_archive_identifier": null
   },
   "split_convention": "Repository expects CamVid images in train/val/test and RGB label masks in train_labels/val_labels/test_labels.",
   "class_dict_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/class_dict.csv",
@@ -32,7 +33,19 @@
     "mask_key": "stem",
     "mask_suffix_to_remove": "_L"
   },
-  "strict_unknown_colors": true,
+  "unknown_color_policy": "map_to_ignore",
+  "strict_unknown_colors": false,
+  "unknown_color_ignore_index": 30,
+  "unknown_color_resolution": {
+    "status": "author_approved",
+    "decision": "Map only unknown RGB pixels to the configured Void index.",
+    "affected_mask": "test_labels/Seq05VD_f02610_L.png",
+    "affected_pixel_count": 175,
+    "current_sha256": "e080f9c41840c6753ab3e7577105862c2822c018b778b30f2ba13ccc931ad682",
+    "reference_sha256": "e080f9c41840c6753ab3e7577105862c2822c018b778b30f2ba13ccc931ad682",
+    "reference_provenance": "Author-supplied Kaggle CamVid copy; exact dataset URL and archive identifier remain TODO."
+  },
+  "unknown_pixels_mapped_to_ignore": 175,
   "class_dictionary_errors": [],
   "splits": [
     {
@@ -1273,9 +1286,7 @@
         "31": 2576710
       },
       "total_mask_pixels": 160358400,
-      "errors": [
-        "55 unknown RGB entries found under strict policy"
-      ]
+      "errors": []
     }
   ],
   "unknown_rgb_values": [
@@ -2400,5 +2411,490 @@
       "split": "test"
     }
   ],
-  "total_inspected_mask_pixels": 484531200
+  "total_inspected_mask_pixels": 484531200,
+  "unknown_colors_by_file": [
+    {
+      "mask_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "total_unknown_pixels": 175,
+      "distinct_unknown_rgb_values": 55,
+      "bounding_box_ymin_xmin_ymax_xmax": [
+        2,
+        305,
+        177,
+        494
+      ],
+      "affected_proportion": 0.00025318287037037036,
+      "connected_region_count_4_neighbor": 25,
+      "all_unknown_pixels_in_one_connected_region": false,
+      "connected_region_sizes": [
+        41,
+        41,
+        12,
+        12,
+        11,
+        8,
+        7,
+        7,
+        7,
+        4,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "unknown_colors": [
+        {
+          "rgb": [
+            2,
+            2,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            2,
+            2,
+            2
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            5,
+            5,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            8,
+            8,
+            8
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            15,
+            15,
+            15
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            18,
+            18,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            0
+          ],
+          "pixel_count": 15
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            26
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            29,
+            29,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            36,
+            36,
+            36
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            47,
+            47,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            48
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            51
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            60,
+            60,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            63,
+            63,
+            63
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            77
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            92,
+            92,
+            92
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            102,
+            102,
+            0
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            108,
+            108,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            110,
+            110,
+            110
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            111,
+            111,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            113,
+            113,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            116,
+            116,
+            116
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            125,
+            125,
+            125
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            3
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            6
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            21
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            26
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            30
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            51
+          ],
+          "pixel_count": 21
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            54
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            63
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            68
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            69
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            75
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            77
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            78
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            92
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            102
+          ],
+          "pixel_count": 12
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            104
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            123
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            126
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            136,
+            136,
+            15
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            138,
+            138,
+            20
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            154,
+            154,
+            51
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            171,
+            171,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            191,
+            191,
+            126
+          ],
+          "pixel_count": 1
+        }
+      ]
+    }
+  ]
 }

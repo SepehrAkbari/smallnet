@@ -292,6 +292,33 @@ class DatasetValidationReportTests(unittest.TestCase):
             self.assertEqual(report["status"], "fail")
             self.assertEqual(report["splits"][0]["unknown_rgb_values"][0]["rgb"], [3, 3, 3])
 
+    def test_map_to_ignore_report_records_exact_mapped_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            data_root = tmp / "CamVid"
+            out = tmp / "results"
+            images, masks = make_split(data_root)
+            write_class_dict(data_root / "class_dict.csv")
+            write_rgb_image(images / "sample.png")
+            write_mask(masks / "sample_L.png", pixels=[[[3, 3, 3], [0, 0, 0]], [[3, 3, 3], [255, 0, 0]]])
+            config = make_config(data_root, out)
+            config["dataset"].update(
+                {
+                    "unknown_color_policy": "map_to_ignore",
+                    "strict_unknown_colors": False,
+                    "unknown_color_ignore_index": 2,
+                }
+            )
+
+            report_path = run_dataset_validation(config, ROOT, device=torch.device("cpu"))
+
+            with open(report_path) as f:
+                report = json.load(f)
+            self.assertEqual(report["status"], "pass")
+            self.assertEqual(report["unknown_color_policy"], "map_to_ignore")
+            self.assertEqual(report["unknown_color_ignore_index"], 2)
+            self.assertEqual(report["unknown_pixels_mapped_to_ignore"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,2452 @@
+{
+  "schema": "smallnet.dataset_mask_forensics.v1",
+  "environment": {
+    "created_utc": "2026-07-12T22:07:09.158773+00:00",
+    "python": "3.12.10",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "torch": "2.12.0",
+    "cuda_available": false,
+    "cuda_version": null,
+    "cudnn_version": null,
+    "mps_available": true,
+    "device": "cpu",
+    "device_name": "CPU",
+    "git_commit": "93236d67a84ef9b76d6e81dd0e7f0df94b5dff78",
+    "git_dirty": true
+  },
+  "affected_file_count": 1,
+  "affected_files": [
+    {
+      "mask_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "sha256": "e080f9c41840c6753ab3e7577105862c2822c018b778b30f2ba13ccc931ad682",
+      "file_format": "PNG",
+      "image_mode": "RGB",
+      "pixel_encoding": "true_rgb",
+      "dimensions_width_height": [
+        960,
+        720
+      ],
+      "png_metadata": {},
+      "png_structure": {
+        "chunks": {
+          "IHDR": 1,
+          "IDAT": 5,
+          "IEND": 1
+        },
+        "ihdr": {
+          "width": 960,
+          "height": 720,
+          "bit_depth": 8,
+          "color_type": 2,
+          "color_type_name": "truecolor_rgb",
+          "compression_method": 0,
+          "filter_method": 0,
+          "interlace_method": 0
+        }
+      },
+      "indexed_palette_entry_count": 0,
+      "colors_and_counts_rgb": [
+        {
+          "rgb": [
+            128,
+            0,
+            0
+          ],
+          "pixel_count": 215165
+        },
+        {
+          "rgb": [
+            128,
+            64,
+            128
+          ],
+          "pixel_count": 174479
+        },
+        {
+          "rgb": [
+            0,
+            0,
+            192
+          ],
+          "pixel_count": 98129
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            128
+          ],
+          "pixel_count": 86839
+        },
+        {
+          "rgb": [
+            128,
+            0,
+            192
+          ],
+          "pixel_count": 33796
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            0
+          ],
+          "pixel_count": 28835
+        },
+        {
+          "rgb": [
+            192,
+            192,
+            128
+          ],
+          "pixel_count": 14728
+        },
+        {
+          "rgb": [
+            0,
+            64,
+            64
+          ],
+          "pixel_count": 12818
+        },
+        {
+          "rgb": [
+            0,
+            0,
+            0
+          ],
+          "pixel_count": 10714
+        },
+        {
+          "rgb": [
+            192,
+            128,
+            128
+          ],
+          "pixel_count": 5223
+        },
+        {
+          "rgb": [
+            64,
+            64,
+            0
+          ],
+          "pixel_count": 2928
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            64
+          ],
+          "pixel_count": 2104
+        },
+        {
+          "rgb": [
+            64,
+            0,
+            128
+          ],
+          "pixel_count": 1961
+        },
+        {
+          "rgb": [
+            64,
+            192,
+            128
+          ],
+          "pixel_count": 1724
+        },
+        {
+          "rgb": [
+            64,
+            192,
+            0
+          ],
+          "pixel_count": 981
+        },
+        {
+          "rgb": [
+            64,
+            0,
+            192
+          ],
+          "pixel_count": 598
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            51
+          ],
+          "pixel_count": 21
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            0
+          ],
+          "pixel_count": 15
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            26
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            102
+          ],
+          "pixel_count": 12
+        },
+        {
+          "rgb": [
+            2,
+            2,
+            2
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            102,
+            102,
+            0
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            77
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            48
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            77
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            3
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            2,
+            2,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            92,
+            92,
+            92
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            192,
+            0,
+            64
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            15,
+            15,
+            15
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            26
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            51
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            60,
+            60,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            108,
+            108,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            116,
+            116,
+            116
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            63
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            92
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            126
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            5,
+            5,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            8,
+            8,
+            8
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            18,
+            18,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            29,
+            29,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            36,
+            36,
+            36
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            47,
+            47,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            63,
+            63,
+            63
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            110,
+            110,
+            110
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            111,
+            111,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            113,
+            113,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            125,
+            125,
+            125
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            6
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            21
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            30
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            54
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            68
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            69
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            75
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            78
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            104
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            123
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            136,
+            136,
+            15
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            138,
+            138,
+            20
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            154,
+            154,
+            51
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            171,
+            171,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            191,
+            191,
+            126
+          ],
+          "pixel_count": 1
+        }
+      ],
+      "unknown_summary": {
+        "mask_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+        "total_unknown_pixels": 175,
+        "distinct_unknown_rgb_values": 55,
+        "bounding_box_ymin_xmin_ymax_xmax": [
+          2,
+          305,
+          177,
+          494
+        ],
+        "affected_proportion": 0.00025318287037037036,
+        "connected_region_count_4_neighbor": 25,
+        "all_unknown_pixels_in_one_connected_region": false,
+        "connected_region_sizes": [
+          41,
+          41,
+          12,
+          12,
+          11,
+          8,
+          7,
+          7,
+          7,
+          4,
+          3,
+          3,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "unknown_colors": [
+          {
+            "rgb": [
+              2,
+              2,
+              0
+            ],
+            "pixel_count": 3
+          },
+          {
+            "rgb": [
+              2,
+              2,
+              2
+            ],
+            "pixel_count": 5
+          },
+          {
+            "rgb": [
+              5,
+              5,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              8,
+              8,
+              8
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              15,
+              15,
+              15
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              18,
+              18,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              26,
+              26,
+              0
+            ],
+            "pixel_count": 15
+          },
+          {
+            "rgb": [
+              26,
+              26,
+              26
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              29,
+              29,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              36,
+              36,
+              36
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              47,
+              47,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              48,
+              48,
+              0
+            ],
+            "pixel_count": 3
+          },
+          {
+            "rgb": [
+              48,
+              48,
+              48
+            ],
+            "pixel_count": 4
+          },
+          {
+            "rgb": [
+              50,
+              50,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              50,
+              50,
+              50
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              51,
+              51,
+              0
+            ],
+            "pixel_count": 14
+          },
+          {
+            "rgb": [
+              51,
+              51,
+              51
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              60,
+              60,
+              0
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              63,
+              63,
+              63
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              77,
+              77,
+              0
+            ],
+            "pixel_count": 14
+          },
+          {
+            "rgb": [
+              77,
+              77,
+              77
+            ],
+            "pixel_count": 4
+          },
+          {
+            "rgb": [
+              92,
+              92,
+              92
+            ],
+            "pixel_count": 3
+          },
+          {
+            "rgb": [
+              102,
+              102,
+              0
+            ],
+            "pixel_count": 5
+          },
+          {
+            "rgb": [
+              108,
+              108,
+              0
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              110,
+              110,
+              110
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              111,
+              111,
+              0
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              113,
+              113,
+              113
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              116,
+              116,
+              116
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              125,
+              125,
+              125
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              3
+            ],
+            "pixel_count": 4
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              6
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              21
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              26
+            ],
+            "pixel_count": 14
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              30
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              50
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              51
+            ],
+            "pixel_count": 21
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              54
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              63
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              68
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              69
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              75
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              77
+            ],
+            "pixel_count": 5
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              78
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              86
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              92
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              102
+            ],
+            "pixel_count": 12
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              104
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              113
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              123
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              126
+            ],
+            "pixel_count": 2
+          },
+          {
+            "rgb": [
+              136,
+              136,
+              15
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              138,
+              138,
+              20
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              154,
+              154,
+              51
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              171,
+              171,
+              86
+            ],
+            "pixel_count": 1
+          },
+          {
+            "rgb": [
+              191,
+              191,
+              126
+            ],
+            "pixel_count": 1
+          }
+        ]
+      },
+      "spatial_and_color_evidence": {
+        "unknown_pixels": 175,
+        "unknown_pixels_adjacent_to_two_or_more_valid_colors": 162,
+        "unknown_pixels_channelwise_intermediate_between_neighboring_valid_colors": 162,
+        "unknown_pixels_on_two_color_segment_with_rounding_tolerance": 161,
+        "per_unknown_color": [
+          {
+            "rgb": [
+              2,
+              2,
+              0
+            ],
+            "pixel_count": 3,
+            "pixels_with_two_or_more_valid_neighbor_colors": 3,
+            "channelwise_intermediate_pixels": 3,
+            "two_color_convex_segment_pixels": 3,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              2,
+              2,
+              2
+            ],
+            "pixel_count": 5,
+            "pixels_with_two_or_more_valid_neighbor_colors": 4,
+            "channelwise_intermediate_pixels": 4,
+            "two_color_convex_segment_pixels": 4,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              5,
+              5,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              8,
+              8,
+              8
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              15,
+              15,
+              15
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              18,
+              18,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              26,
+              26,
+              0
+            ],
+            "pixel_count": 15,
+            "pixels_with_two_or_more_valid_neighbor_colors": 15,
+            "channelwise_intermediate_pixels": 15,
+            "two_color_convex_segment_pixels": 15,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              26,
+              26,
+              26
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 0,
+            "channelwise_intermediate_pixels": 0,
+            "two_color_convex_segment_pixels": 0,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              29,
+              29,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              36,
+              36,
+              36
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              47,
+              47,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              48,
+              48,
+              0
+            ],
+            "pixel_count": 3,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              48,
+              48,
+              48
+            ],
+            "pixel_count": 4,
+            "pixels_with_two_or_more_valid_neighbor_colors": 3,
+            "channelwise_intermediate_pixels": 3,
+            "two_color_convex_segment_pixels": 3,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              50,
+              50,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 0,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              50,
+              50,
+              50
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              51,
+              51,
+              0
+            ],
+            "pixel_count": 14,
+            "pixels_with_two_or_more_valid_neighbor_colors": 14,
+            "channelwise_intermediate_pixels": 14,
+            "two_color_convex_segment_pixels": 14,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              51,
+              51,
+              51
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              60,
+              60,
+              0
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              63,
+              63,
+              63
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 0,
+            "channelwise_intermediate_pixels": 0,
+            "two_color_convex_segment_pixels": 0,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              77,
+              77,
+              0
+            ],
+            "pixel_count": 14,
+            "pixels_with_two_or_more_valid_neighbor_colors": 14,
+            "channelwise_intermediate_pixels": 14,
+            "two_color_convex_segment_pixels": 14,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              77,
+              77,
+              77
+            ],
+            "pixel_count": 4,
+            "pixels_with_two_or_more_valid_neighbor_colors": 4,
+            "channelwise_intermediate_pixels": 4,
+            "two_color_convex_segment_pixels": 4,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              92,
+              92,
+              92
+            ],
+            "pixel_count": 3,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              102,
+              102,
+              0
+            ],
+            "pixel_count": 5,
+            "pixels_with_two_or_more_valid_neighbor_colors": 5,
+            "channelwise_intermediate_pixels": 5,
+            "two_color_convex_segment_pixels": 5,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              108,
+              108,
+              0
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              110,
+              110,
+              110
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              111,
+              111,
+              0
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              113,
+              113,
+              113
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              116,
+              116,
+              116
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              125,
+              125,
+              125
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 0,
+            "channelwise_intermediate_pixels": 0,
+            "two_color_convex_segment_pixels": 0,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              3
+            ],
+            "pixel_count": 4,
+            "pixels_with_two_or_more_valid_neighbor_colors": 3,
+            "channelwise_intermediate_pixels": 3,
+            "two_color_convex_segment_pixels": 3,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              6
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              21
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              26
+            ],
+            "pixel_count": 14,
+            "pixels_with_two_or_more_valid_neighbor_colors": 14,
+            "channelwise_intermediate_pixels": 14,
+            "two_color_convex_segment_pixels": 14,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              30
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              50
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              51
+            ],
+            "pixel_count": 21,
+            "pixels_with_two_or_more_valid_neighbor_colors": 21,
+            "channelwise_intermediate_pixels": 21,
+            "two_color_convex_segment_pixels": 21,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              54
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              63
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              68
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              69
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              75
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              77
+            ],
+            "pixel_count": 5,
+            "pixels_with_two_or_more_valid_neighbor_colors": 5,
+            "channelwise_intermediate_pixels": 5,
+            "two_color_convex_segment_pixels": 5,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              78
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              86
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              92
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              102
+            ],
+            "pixel_count": 12,
+            "pixels_with_two_or_more_valid_neighbor_colors": 12,
+            "channelwise_intermediate_pixels": 12,
+            "two_color_convex_segment_pixels": 12,
+            "neighboring_valid_colors": [
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              104
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              113
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              123
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              128,
+              128,
+              126
+            ],
+            "pixel_count": 2,
+            "pixels_with_two_or_more_valid_neighbor_colors": 2,
+            "channelwise_intermediate_pixels": 2,
+            "two_color_convex_segment_pixels": 2,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                128,
+                128,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              136,
+              136,
+              15
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                192,
+                192,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              138,
+              138,
+              20
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                192,
+                192,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              154,
+              154,
+              51
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                192,
+                192,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              171,
+              171,
+              86
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                192,
+                192,
+                128
+              ]
+            ]
+          },
+          {
+            "rgb": [
+              191,
+              191,
+              126
+            ],
+            "pixel_count": 1,
+            "pixels_with_two_or_more_valid_neighbor_colors": 1,
+            "channelwise_intermediate_pixels": 1,
+            "two_color_convex_segment_pixels": 1,
+            "neighboring_valid_colors": [
+              [
+                128,
+                128,
+                0
+              ],
+              [
+                192,
+                192,
+                128
+              ]
+            ]
+          }
+        ],
+        "method_note": "Neighborhoods are 8-connected. Channel-wise intermediacy means the RGB value lies inside the axis-aligned range of a pair of neighboring valid class colors. The convex-segment test requires the value to lie within 1 RGB level of a segment joining two neighboring valid colors."
+      },
+      "conclusion": "The invalid pixels do not uniformly satisfy the tested boundary/intermediacy criteria; these data alone do not support attributing every invalid value to interpolation or antialiasing."
+    }
+  ],
+  "evidence_note": "Spatial and RGB intermediacy tests are evidence only; authoritative-source comparison is required to establish provenance."
+}

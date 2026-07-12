@@ -90,7 +90,7 @@ def write_csv(path, rows, fieldnames=None):
     if fieldnames is None:
         fieldnames = sorted({key for row in rows for key in row})
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     return path

@@ -14,6 +14,7 @@ from src.smallnet.data import (
     class_validation_options,
     load_camvid_class_names,
     make_camvid_loader,
+    parse_camvid_class_dict,
     pairing_rule_from_config,
     strict_unknown_colors_from_config,
     validate_camvid_data,
@@ -22,6 +23,7 @@ from src.smallnet.diagnostics import rank_energy_diagnostic
 from src.smallnet.evaluation import evaluate_segmentation
 from src.smallnet.factorization import build_factorized_model_from_dense
 from src.smallnet.models import build_vgg16_fcn32s, load_vgg16_fcn32s_checkpoint
+from src.smallnet.mask_forensics import aggregate_unknown_colors_by_file, inspect_mask_forensics
 from src.smallnet.modules import count_parameters, get_module
 from src.smallnet.paper import write_rank_energy_artifacts
 from src.smallnet.profiling import latency_stats, manual_macs
@@ -215,9 +217,32 @@ def run_dataset_validation(config, root, device=None, max_batches=None):
     output_dir = experiment_output_dir(config, root)
     save_config_snapshot(output_dir / f"{stage}_config_used.json", config)
     report, summary_rows, class_count_rows = validate_camvid_data(config, root)
+    definitions = parse_camvid_class_dict(class_dict_path(config, root))
+    affected_paths = sorted({item["mask"] for item in report["unknown_rgb_values"]})
+    unknown_by_file = aggregate_unknown_colors_by_file(affected_paths, definitions)
+    report["unknown_colors_by_file"] = unknown_by_file
+    forensic_payload = {
+        "schema": "smallnet.dataset_mask_forensics.v1",
+        "affected_file_count": len(affected_paths),
+        "affected_files": [inspect_mask_forensics(path, class_dict_path(config, root)) for path in affected_paths],
+        "evidence_note": "Spatial and RGB intermediacy tests are evidence only; authoritative-source comparison is required to establish provenance.",
+    }
     report_path = save_manifest(output_dir / f"{stage}_report.json", report, device=device)
     write_csv(output_dir / f"{stage}_summary.csv", summary_rows)
     write_csv(output_dir / "dataset_class_counts.csv", class_count_rows)
+    write_csv(
+        output_dir / "dataset_unknown_colors_by_file.csv",
+        [
+            {
+                **{key: value for key, value in row.items() if key not in {"unknown_colors", "connected_region_sizes"}},
+                "bounding_box_ymin_xmin_ymax_xmax": ",".join(map(str, row["bounding_box_ymin_xmin_ymax_xmax"])),
+                "connected_region_sizes": ",".join(map(str, row["connected_region_sizes"])),
+            }
+            for row in unknown_by_file
+        ],
+        fieldnames=["mask_path", "total_unknown_pixels", "distinct_unknown_rgb_values", "bounding_box_ymin_xmin_ymax_xmax", "affected_proportion", "connected_region_count_4_neighbor", "all_unknown_pixels_in_one_connected_region", "connected_region_sizes"],
+    )
+    save_manifest(output_dir / "dataset_mask_forensics.json", forensic_payload, device=device)
     if report["status"] != "pass":
         raise RuntimeError(f"Dataset validation failed; see {report_path}")
     return report_path
