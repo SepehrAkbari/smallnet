@@ -1,7 +1,6 @@
 .venv
 __pycache__
-data/CamVid
-data/CamVid/
+# data/CamVid/
 data/VOCdevkit/
 model/*.pth
 model/*.pt
