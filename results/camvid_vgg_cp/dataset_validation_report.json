@@ -1,17 +1,17 @@
 {
   "schema": "smallnet.dataset_validation.v1",
   "environment": {
-    "created_utc": "2026-07-12T22:07:09.053869+00:00",
-    "python": "3.12.10",
-    "platform": "macOS-26.3-arm64-arm-64bit",
-    "torch": "2.12.0",
-    "cuda_available": false,
-    "cuda_version": null,
-    "cudnn_version": null,
-    "mps_available": true,
+    "created_utc": "2026-07-21T17:40:06.907599+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
     "device": "cpu",
     "device_name": "CPU",
-    "git_commit": "93236d67a84ef9b76d6e81dd0e7f0df94b5dff78",
+    "git_commit": "d0a3c7febfa11b2a8fb5825fa3a376b169022553",
     "git_dirty": true
   },
   "status": "pass",
@@ -22,7 +22,7 @@
     "source_archive_identifier": null
   },
   "split_convention": "Repository expects CamVid images in train/val/test and RGB label masks in train_labels/val_labels/test_labels.",
-  "class_dict_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/class_dict.csv",
+  "class_dict_path": "/content/smallnet/data/CamVid/class_dict.csv",
   "class_dict_sha256": "228a06d60032bcf7fe01683a7ac03911875268494143029dacc1df8201fbb48b",
   "num_classes": 32,
   "configured_num_classes": 32,
@@ -50,8 +50,8 @@
   "splits": [
     {
       "split": "train",
-      "images_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/train",
-      "masks_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/train_labels",
+      "images_dir": "/content/smallnet/data/CamVid/train",
+      "masks_dir": "/content/smallnet/data/CamVid/train_labels",
       "image_count": 369,
       "mask_count": 369,
       "matched_pair_count": 369,
@@ -108,8 +108,8 @@
     },
     {
       "split": "val",
-      "images_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/val",
-      "masks_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/val_labels",
+      "images_dir": "/content/smallnet/data/CamVid/val",
+      "masks_dir": "/content/smallnet/data/CamVid/val_labels",
       "image_count": 100,
       "mask_count": 100,
       "matched_pair_count": 100,
@@ -166,8 +166,8 @@
     },
     {
       "split": "test",
-      "images_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test",
-      "masks_dir": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels",
+      "images_dir": "/content/smallnet/data/CamVid/test",
+      "masks_dir": "/content/smallnet/data/CamVid/test_labels",
       "image_count": 232,
       "mask_count": 232,
       "matched_pair_count": 232,
@@ -192,7 +192,7 @@
             0
           ],
           "pixel_count": 3,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               66,
@@ -215,7 +215,7 @@
             2
           ],
           "pixel_count": 5,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               56,
@@ -246,7 +246,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               4,
@@ -261,7 +261,7 @@
             8
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               52,
@@ -276,7 +276,7 @@
             15
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               61,
@@ -295,7 +295,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -310,7 +310,7 @@
             0
           ],
           "pixel_count": 15,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -341,7 +341,7 @@
             26
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -360,7 +360,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               4,
@@ -375,7 +375,7 @@
             36
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -390,7 +390,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               152,
@@ -405,7 +405,7 @@
             0
           ],
           "pixel_count": 3,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -428,7 +428,7 @@
             48
           ],
           "pixel_count": 4,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               57,
@@ -455,7 +455,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               65,
@@ -470,7 +470,7 @@
             50
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               66,
@@ -485,7 +485,7 @@
             0
           ],
           "pixel_count": 14,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -516,7 +516,7 @@
             51
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -535,7 +535,7 @@
             0
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               68,
@@ -554,7 +554,7 @@
             63
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               51,
@@ -569,7 +569,7 @@
             0
           ],
           "pixel_count": 14,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -600,7 +600,7 @@
             77
           ],
           "pixel_count": 4,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -627,7 +627,7 @@
             92
           ],
           "pixel_count": 3,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               56,
@@ -650,7 +650,7 @@
             0
           ],
           "pixel_count": 5,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               4,
@@ -681,7 +681,7 @@
             0
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               153,
@@ -700,7 +700,7 @@
             110
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               52,
@@ -715,7 +715,7 @@
             0
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               65,
@@ -730,7 +730,7 @@
             113
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               62,
@@ -745,7 +745,7 @@
             116
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               58,
@@ -764,7 +764,7 @@
             125
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               51,
@@ -779,7 +779,7 @@
             3
           ],
           "pixel_count": 4,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               111,
@@ -806,7 +806,7 @@
             6
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -821,7 +821,7 @@
             21
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               164,
@@ -836,7 +836,7 @@
             26
           ],
           "pixel_count": 14,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -867,7 +867,7 @@
             30
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -882,7 +882,7 @@
             50
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               4,
@@ -897,7 +897,7 @@
             51
           ],
           "pixel_count": 21,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -928,7 +928,7 @@
             54
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -943,7 +943,7 @@
             63
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               67,
@@ -962,7 +962,7 @@
             68
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               70,
@@ -977,7 +977,7 @@
             69
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               113,
@@ -992,7 +992,7 @@
             75
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               4,
@@ -1007,7 +1007,7 @@
             77
           ],
           "pixel_count": 5,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -1038,7 +1038,7 @@
             78
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               163,
@@ -1053,7 +1053,7 @@
             86
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -1068,7 +1068,7 @@
             92
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               147,
@@ -1087,7 +1087,7 @@
             102
           ],
           "pixel_count": 12,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               2,
@@ -1118,7 +1118,7 @@
             104
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               3,
@@ -1133,7 +1133,7 @@
             113
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               165,
@@ -1148,7 +1148,7 @@
             123
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               79,
@@ -1163,7 +1163,7 @@
             126
           ],
           "pixel_count": 2,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               160,
@@ -1182,7 +1182,7 @@
             15
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               176,
@@ -1197,7 +1197,7 @@
             20
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               175,
@@ -1212,7 +1212,7 @@
             51
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               177,
@@ -1227,7 +1227,7 @@
             86
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               174,
@@ -1242,7 +1242,7 @@
             126
           ],
           "pixel_count": 1,
-          "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
           "example_coordinates_yx": [
             [
               174,
@@ -1297,7 +1297,7 @@
         0
       ],
       "pixel_count": 3,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           66,
@@ -1321,7 +1321,7 @@
         2
       ],
       "pixel_count": 5,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           56,
@@ -1353,7 +1353,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           4,
@@ -1369,7 +1369,7 @@
         8
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           52,
@@ -1385,7 +1385,7 @@
         15
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           61,
@@ -1405,7 +1405,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1421,7 +1421,7 @@
         0
       ],
       "pixel_count": 15,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1453,7 +1453,7 @@
         26
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1473,7 +1473,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           4,
@@ -1489,7 +1489,7 @@
         36
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1505,7 +1505,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           152,
@@ -1521,7 +1521,7 @@
         0
       ],
       "pixel_count": 3,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -1545,7 +1545,7 @@
         48
       ],
       "pixel_count": 4,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           57,
@@ -1573,7 +1573,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           65,
@@ -1589,7 +1589,7 @@
         50
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           66,
@@ -1605,7 +1605,7 @@
         0
       ],
       "pixel_count": 14,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -1637,7 +1637,7 @@
         51
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1657,7 +1657,7 @@
         0
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           68,
@@ -1677,7 +1677,7 @@
         63
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           51,
@@ -1693,7 +1693,7 @@
         0
       ],
       "pixel_count": 14,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -1725,7 +1725,7 @@
         77
       ],
       "pixel_count": 4,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -1753,7 +1753,7 @@
         92
       ],
       "pixel_count": 3,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           56,
@@ -1777,7 +1777,7 @@
         0
       ],
       "pixel_count": 5,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           4,
@@ -1809,7 +1809,7 @@
         0
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           153,
@@ -1829,7 +1829,7 @@
         110
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           52,
@@ -1845,7 +1845,7 @@
         0
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           65,
@@ -1861,7 +1861,7 @@
         113
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           62,
@@ -1877,7 +1877,7 @@
         116
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           58,
@@ -1897,7 +1897,7 @@
         125
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           51,
@@ -1913,7 +1913,7 @@
         3
       ],
       "pixel_count": 4,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           111,
@@ -1941,7 +1941,7 @@
         6
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -1957,7 +1957,7 @@
         21
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           164,
@@ -1973,7 +1973,7 @@
         26
       ],
       "pixel_count": 14,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -2005,7 +2005,7 @@
         30
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -2021,7 +2021,7 @@
         50
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           4,
@@ -2037,7 +2037,7 @@
         51
       ],
       "pixel_count": 21,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -2069,7 +2069,7 @@
         54
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -2085,7 +2085,7 @@
         63
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           67,
@@ -2105,7 +2105,7 @@
         68
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           70,
@@ -2121,7 +2121,7 @@
         69
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           113,
@@ -2137,7 +2137,7 @@
         75
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           4,
@@ -2153,7 +2153,7 @@
         77
       ],
       "pixel_count": 5,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -2185,7 +2185,7 @@
         78
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           163,
@@ -2201,7 +2201,7 @@
         86
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -2217,7 +2217,7 @@
         92
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           147,
@@ -2237,7 +2237,7 @@
         102
       ],
       "pixel_count": 12,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           2,
@@ -2269,7 +2269,7 @@
         104
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           3,
@@ -2285,7 +2285,7 @@
         113
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           165,
@@ -2301,7 +2301,7 @@
         123
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           79,
@@ -2317,7 +2317,7 @@
         126
       ],
       "pixel_count": 2,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           160,
@@ -2337,7 +2337,7 @@
         15
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           176,
@@ -2353,7 +2353,7 @@
         20
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           175,
@@ -2369,7 +2369,7 @@
         51
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           177,
@@ -2385,7 +2385,7 @@
         86
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           174,
@@ -2401,7 +2401,7 @@
         126
       ],
       "pixel_count": 1,
-      "mask": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "example_coordinates_yx": [
         [
           174,
@@ -2414,7 +2414,7 @@
   "total_inspected_mask_pixels": 484531200,
   "unknown_colors_by_file": [
     {
-      "mask_path": "/Users/sepehrakbari/Projects/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "mask_path": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
       "total_unknown_pixels": 175,
       "distinct_unknown_rgb_values": 55,
       "bounding_box_ymin_xmin_ymax_xmax": [

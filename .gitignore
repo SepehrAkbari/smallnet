@@ -17,3 +17,6 @@ doc/
 
 paper/
 tmp/
+
+results/camvid_vgg_cp_temp/
+results/paper_temp/

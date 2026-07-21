@@ -87,6 +87,27 @@
     "save_zero_shot_checkpoints": false,
     "save_finetuned_checkpoints": false
   },
+  "reconstruction": {
+    "ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "init": "random",
+    "n_iter_max": 10,
+    "memory_efficient_mttkrp": true,
+    "mttkrp_rank_chunk_size": 64,
+    "mttkrp_max_explicit_bytes": 536870912,
+    "numerical_tolerance": 1e-05,
+    "residual_reproduction_tolerance": 1e-05
+  },
   "existing_finetuned_checkpoints": {
     "64": "model/finetuned_rank_64.pth",
     "128": "model/finetuned_rank_128.pth",
