@@ -34,7 +34,7 @@ from src.smallnet.modules import count_parameters, get_module, set_module
 from src.smallnet.paper import write_rank_energy_artifacts
 from src.smallnet.profiling import latency_stats, manual_macs
 from src.smallnet.reproducibility import device_name, set_seed
-from src.smallnet.results import save_config_snapshot, save_manifest, write_csv
+from src.smallnet.results import load_manifest, save_config_snapshot, save_manifest, write_csv
 from src.smallnet.structural import (
     aggregate_cp_reconstruction_rows,
     cp_conv_parameter_count,
@@ -43,10 +43,12 @@ from src.smallnet.structural import (
     fit_cp_approximation,
     join_structural_tradeoffs,
     matrix_svd_conv_parameter_count,
+    normalize_reconstruction_rows,
     normalized_frobenius_residual,
     output_mode_svd,
     reconstruction_rows_for_conv,
     representation_macs,
+    scientific_reconstruction_key,
     write_reconstruction_figure,
     write_unfolding_energy_figure,
     write_zero_shot_figure,
@@ -836,20 +838,38 @@ def run_reconstruction(config, root, device, max_batches=None):
     mttkrp_rank_chunk_size = int(recon_cfg.get("mttkrp_rank_chunk_size", 64))
     mttkrp_max_explicit_bytes = int(recon_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2))
     summary_path = output_dir / "reconstruction_summary.csv"
-    persisted_rows = {}
-    if summary_path.is_file():
-        for row in _read_reconstruction_rows(summary_path):
-            key = (row.get("method", ""), row.get("rank", ""), row.get("seed", ""))
-            persisted_rows[key] = row
+    raw_loaded_rows = _read_reconstruction_rows(summary_path) if summary_path.is_file() else []
+    normalized_loaded, preserved_raw_rows, row_diagnostics = normalize_reconstruction_rows(
+        raw_loaded_rows,
+        context="incremental reconstruction CSV load",
+    )
+    persisted_rows = {
+        scientific_reconstruction_key(row): row for row in normalized_loaded
+    }
+    requested_keys = {
+        *(("matrix_svd_output_unfolding", rank) for rank in ranks),
+        *(("cp", rank, seed) for rank in ranks for seed in seeds),
+    }
+    completed_keys = {
+        key for key, row in persisted_rows.items() if row.get("status") == "completed"
+    }
+    if not (requested_keys - completed_keys):
+        return run_reconstruction_figures(config, root, device=device)
 
     def persist(rows):
-        for row in rows:
-            key = (str(row.get("method", "")), str(row.get("rank", "")), str(row.get("seed", "")))
+        normalized_new, rejected_new, new_diagnostics = normalize_reconstruction_rows(
+            rows,
+            context="incremental reconstruction append",
+        )
+        row_diagnostics.extend(new_diagnostics)
+        preserved_raw_rows.extend(rejected_new)
+        for row in normalized_new:
+            key = scientific_reconstruction_key(row)
             previous = persisted_rows.get(key)
             if previous and previous.get("status") == "completed" and row.get("status") == "failed":
                 continue
             persisted_rows[key] = row
-        write_csv(summary_path, persisted_rows.values())
+        write_csv(summary_path, [*persisted_rows.values(), *preserved_raw_rows])
 
     conv = _reconstruction_conv(config, root)
     rows, aggregates, diagnostic, failures = reconstruction_rows_for_conv(
@@ -863,15 +883,39 @@ def run_reconstruction(config, root, device, max_batches=None):
         memory_efficient_mttkrp=memory_efficient_mttkrp,
         mttkrp_rank_chunk_size=mttkrp_rank_chunk_size,
         mttkrp_max_explicit_bytes=mttkrp_max_explicit_bytes,
+        skip_keys=completed_keys,
         on_update=persist,
     )
-    rows = list(persisted_rows.values())
-    aggregates = aggregate_cp_reconstruction_rows(rows)
+    rows = [*persisted_rows.values(), *preserved_raw_rows]
+    aggregates = aggregate_cp_reconstruction_rows(rows, diagnostics=row_diagnostics)
     write_csv(output_dir / "reconstruction_rank_summary.csv", aggregates)
-    figures = [
-        *write_unfolding_energy_figure(diagnostic, canonical_ranks, _paper_figures_dir(config, root)),
-        *write_reconstruction_figure(rows, _paper_figures_dir(config, root)),
-    ]
+    figures = []
+    figure_generation_failures = []
+    for figure_name, writer in (
+        (
+            "unfolding_cumulative_energy",
+            lambda: write_unfolding_energy_figure(
+                diagnostic,
+                canonical_ranks,
+                _paper_figures_dir(config, root),
+                diagnostics=row_diagnostics,
+            ),
+        ),
+        (
+            "reconstruction_squared_error",
+            lambda: write_reconstruction_figure(
+                rows,
+                _paper_figures_dir(config, root),
+                diagnostics=row_diagnostics,
+            ),
+        ),
+    ):
+        try:
+            figures.extend(writer())
+        except Exception as exc:
+            figure_generation_failures.append(
+                {"figure": figure_name, "exception": repr(exc), "nonfatal": True}
+            )
     metadata_path = save_manifest(
         output_dir / "reconstruction_metadata.json",
         {
@@ -898,6 +942,12 @@ def run_reconstruction(config, root, device, max_batches=None):
             "diagnostic": diagnostic,
             "cp_rank_aggregates": aggregates,
             "failures": failures,
+            "row_normalization_diagnostics": row_diagnostics,
+            "figure_generation_failures": figure_generation_failures,
+            "figure_generation_failure_policy": (
+                "Figure failures are nonfatal after computation rows have been saved. "
+                "Regenerate them with --stage reconstruction-figures."
+            ),
             "convergence_metadata_note": (
                 "tensorly-torch 0.5 does not expose per-iteration loss history through FactorizedConv.from_conv; "
                 "completed CP rows therefore record the requested iteration budget and explicitly mark actual "
@@ -918,15 +968,104 @@ def _read_reconstruction_rows(path):
         return list(csv.DictReader(handle))
 
 
+def run_reconstruction_figures(config, root, device=None, max_batches=None):
+    '''Regenerate reconstruction figures from saved rows without decomposition.'''
+    stage = "reconstruction_figures"
+    output_dir = prepare_run_outputs(config, root, stage)
+    summary_path = output_dir / "reconstruction_summary.csv"
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"Saved reconstruction rows are missing: {summary_path}")
+
+    raw_rows = _read_reconstruction_rows(summary_path)
+    normalized_rows, preserved_raw_rows, row_diagnostics = normalize_reconstruction_rows(
+        raw_rows,
+        context="reconstruction figure-only CSV load",
+    )
+    rows = [*normalized_rows, *preserved_raw_rows]
+    write_csv(summary_path, rows)
+    aggregates = aggregate_cp_reconstruction_rows(rows, diagnostics=row_diagnostics)
+    write_csv(output_dir / "reconstruction_rank_summary.csv", aggregates)
+
+    reconstruction_metadata_path = output_dir / "reconstruction_metadata.json"
+    diagnostic = None
+    if reconstruction_metadata_path.is_file():
+        diagnostic = load_manifest(reconstruction_metadata_path).get("diagnostic")
+
+    canonical_ranks = [
+        int(value)
+        for value in reconstruction_config(config).get(
+            "ranks", cp_config(config).get("ranks", [32, 64, 128, 256, 512])
+        )
+    ]
+    figures = []
+    figure_generation_failures = []
+    if diagnostic is None:
+        figure_generation_failures.append(
+            {
+                "figure": "unfolding_cumulative_energy",
+                "exception": "saved reconstruction metadata does not contain spectral diagnostics",
+                "nonfatal": True,
+            }
+        )
+    else:
+        try:
+            figures.extend(
+                write_unfolding_energy_figure(
+                    diagnostic,
+                    canonical_ranks,
+                    _paper_figures_dir(config, root),
+                    diagnostics=row_diagnostics,
+                )
+            )
+        except Exception as exc:
+            figure_generation_failures.append(
+                {"figure": "unfolding_cumulative_energy", "exception": repr(exc), "nonfatal": True}
+            )
+
+    try:
+        figures.extend(
+            write_reconstruction_figure(
+                rows,
+                _paper_figures_dir(config, root),
+                diagnostics=row_diagnostics,
+            )
+        )
+    except Exception as exc:
+        figure_generation_failures.append(
+            {"figure": "reconstruction_squared_error", "exception": repr(exc), "nonfatal": True}
+        )
+
+    return save_manifest(
+        output_dir / "reconstruction_figures_metadata.json",
+        {
+            "kind": "structural_reconstruction_figure_regeneration",
+            "experiment_id": config.get("experiment_id"),
+            "source_reconstruction_summary": str(summary_path),
+            "source_reconstruction_metadata": str(reconstruction_metadata_path),
+            "scientific_row_count": len(normalized_rows),
+            "preserved_raw_malformed_row_count": len(preserved_raw_rows),
+            "row_normalization_diagnostics": row_diagnostics,
+            "figure_outputs": figures,
+            "figure_generation_failures": figure_generation_failures,
+            "figure_generation_failure_policy": (
+                "Figure-only failures are recorded as nonfatal diagnostics."
+            ),
+        },
+        device=device,
+    )
+
+
 def _reconstruction_lookup(rows):
+    normalized, _, _ = normalize_reconstruction_rows(
+        rows,
+        context="structural zero-shot reconstruction lookup",
+    )
     lookup = {}
-    for row in rows:
+    for row in normalized:
         if row.get("status") != "completed":
             continue
-        seed = row.get("seed", "")
-        if seed.endswith(".0"):
-            seed = seed[:-2]
-        lookup[(row["method"], str(int(float(row["rank"]))), seed)] = row
+        seed = "" if row["seed"] == "" else str(int(row["seed"]))
+        lookup[(row["method"], str(int(row["rank"])), seed)] = row
     return lookup
 
 
@@ -1154,7 +1293,12 @@ def run_structural_zero_shot(config, root, device, max_batches=None):
             gc.collect()
 
     all_rows = list(persisted_evaluations.values())
-    tradeoff_rows = join_structural_tradeoffs(reconstruction_rows, all_rows)
+    row_normalization_diagnostics = []
+    tradeoff_rows = join_structural_tradeoffs(
+        reconstruction_rows,
+        all_rows,
+        diagnostics=row_normalization_diagnostics,
+    )
     tradeoff_path = output_dir / "structural_tradeoff_summary.csv"
     write_csv(tradeoff_path, tradeoff_rows)
     correlations = exploratory_correlations(tradeoff_rows)
@@ -1163,7 +1307,19 @@ def run_structural_zero_shot(config, root, device, max_batches=None):
         {"kind": "exploratory_structural_correlations", **correlations},
         device=device,
     )
-    figure_outputs = write_zero_shot_figure(all_rows, _paper_figures_dir(config, root), split="test")
+    figure_outputs = []
+    figure_generation_failures = []
+    try:
+        figure_outputs = write_zero_shot_figure(
+            all_rows,
+            _paper_figures_dir(config, root),
+            split="test",
+            diagnostics=row_normalization_diagnostics,
+        )
+    except Exception as exc:
+        figure_generation_failures.append(
+            {"figure": "zero_shot_present_class_miou", "exception": repr(exc), "nonfatal": True}
+        )
     return save_manifest(
         output_dir / "structural_zero_shot_metadata.json",
         {
@@ -1181,6 +1337,8 @@ def run_structural_zero_shot(config, root, device, max_batches=None):
             "tradeoff_summary_reference": str(tradeoff_path),
             "exploratory_correlations_reference": str(correlation_path),
             "figure_outputs": figure_outputs,
+            "row_normalization_diagnostics": row_normalization_diagnostics,
+            "figure_generation_failures": figure_generation_failures,
             "failures": failures,
             "skipped_splits": skipped,
             "software_versions": _software_versions(),

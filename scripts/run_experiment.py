@@ -23,6 +23,7 @@ from src.smallnet.experiment import (
     run_profiling,
     run_rank_diagnostics,
     run_reconstruction,
+    run_reconstruction_figures,
     run_structural_zero_shot,
 )
 from src.smallnet.reproducibility import auto_device
@@ -37,6 +38,7 @@ STAGES = {
     "profile": [run_profiling],
     "rank": [run_rank_diagnostics],
     "reconstruction": [run_reconstruction],
+    "reconstruction-figures": [run_reconstruction_figures],
     "structural-zero-shot": [run_structural_zero_shot],
     "full": [
         run_dense_evaluation,

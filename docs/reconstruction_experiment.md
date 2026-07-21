@@ -62,6 +62,8 @@ The canonical configuration retains the existing random initializer and 10-itera
 
 Each successful or failed rank/seed is written incrementally. Re-running a subset merges by method/rank/seed, and a new failure does not replace an already completed reconstruction row.
 
+Ranks and CP seeds are normalized to nonnegative integers whenever saved CSV rows are loaded. Matrix-SVD seeds remain empty. Malformed ranks, summary labels such as `all` or `mean`, and duplicate scientific keys are excluded from aggregation and figures while their raw rows and normalization diagnostics remain available in the CSV and metadata. Figure-generation failures are nonfatal after computation rows have been saved.
+
 ## Commands
 
 Validate the implementation and run the dataset-free smoke test locally:
@@ -83,6 +85,26 @@ uv run python scripts/run_experiment.py \
   --config configs/camvid_vgg_cp_paper.json \
   --stage reconstruction \
   --device cpu
+```
+
+Regenerate Figures A and B from saved rows and spectral metadata without loading the checkpoint or rerunning SVD/CP decomposition:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage reconstruction-figures \
+  --device cpu
+```
+
+To resume a partially completed rank, request the intended rank and seeds again. Completed matrix-SVD and CP keys are skipped automatically; only missing or failed combinations are recomputed:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage reconstruction \
+  --device cuda \
+  --ranks 32 \
+  --seeds 0 1 2
 ```
 
 After reconstruction is complete, run the validated zero-shot comparison:
@@ -126,6 +148,7 @@ Canonical reconstruction artifacts:
 - `results/camvid_vgg_cp/reconstruction_rank_summary.csv`: CP mean, population standard deviation, minimum, and maximum squared residual by rank.
 - `results/camvid_vgg_cp/reconstruction_metadata.json`: spectral data, versions, deterministic settings, convergence limitations, failures, and output references.
 - `results/camvid_vgg_cp/reconstruction_config_used.json`: exact configuration snapshot.
+- `results/camvid_vgg_cp/reconstruction_figures_metadata.json`: figure-only regeneration outputs, normalization diagnostics, and nonfatal figure failures.
 
 Canonical mask-dependent and joined artifacts:
 

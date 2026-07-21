@@ -3,6 +3,7 @@
 import gc
 import math
 import time
+import warnings
 from collections import defaultdict
 from pathlib import Path
 
@@ -27,6 +28,124 @@ MODE_NAMES = {
     2: "kernel height",
     3: "kernel width",
 }
+
+SCIENTIFIC_RECONSTRUCTION_METHODS = {"cp", "matrix_svd_output_unfolding"}
+
+
+def _missing_scalar(value):
+    if value is None or value == "":
+        return True
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _normalize_nonnegative_integer(value, field, *, positive=False):
+    numeric = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    if pd.isna(numeric) or not np.isfinite(numeric) or float(numeric) != int(numeric):
+        raise ValueError(f"{field} must be an integer, got {value!r}")
+    normalized = int(numeric)
+    if positive and normalized <= 0:
+        raise ValueError(f"{field} must be positive, got {value!r}")
+    if not positive and normalized < 0:
+        raise ValueError(f"{field} must be nonnegative, got {value!r}")
+    return normalized
+
+
+def scientific_reconstruction_key(row):
+    method = str(row.get("method", "")).strip()
+    if method not in SCIENTIFIC_RECONSTRUCTION_METHODS:
+        raise ValueError(f"unsupported scientific method label {method!r}")
+    rank = _normalize_nonnegative_integer(row.get("rank"), "rank", positive=True)
+    if method == "cp":
+        if _missing_scalar(row.get("seed")):
+            raise ValueError("CP rows require a numeric seed")
+        seed = _normalize_nonnegative_integer(row.get("seed"), "seed")
+        return method, rank, seed
+    if not _missing_scalar(row.get("seed")):
+        raise ValueError("deterministic matrix-SVD rows must not contain a seed")
+    return method, rank
+
+
+def normalize_reconstruction_rows(rows, context="reconstruction rows", *, warn=True):
+    '''Normalize scientific rank/seed fields and separate malformed raw rows.'''
+    normalized_by_key = {}
+    rejected = []
+    diagnostics = []
+    for index, original in enumerate(rows):
+        row = dict(original)
+        try:
+            key = scientific_reconstruction_key(row)
+            row["method"] = key[0]
+            row["rank"] = key[1]
+            row["seed"] = key[2] if key[0] == "cp" else ""
+        except (TypeError, ValueError) as exc:
+            rejected.append(row)
+            diagnostics.append(
+                {
+                    "context": context,
+                    "row_index": index,
+                    "reason": str(exc),
+                    "method": row.get("method", ""),
+                    "rank": row.get("rank", ""),
+                    "seed": row.get("seed", ""),
+                }
+            )
+            continue
+
+        previous = normalized_by_key.get(key)
+        if previous is not None:
+            diagnostics.append(
+                {
+                    "context": context,
+                    "row_index": index,
+                    "reason": f"duplicate scientific row for key {key!r}; retained one row",
+                    "method": row["method"],
+                    "rank": row["rank"],
+                    "seed": row["seed"],
+                }
+            )
+            if previous.get("status") == "completed" and row.get("status") != "completed":
+                continue
+        normalized_by_key[key] = row
+
+    if diagnostics and warn:
+        warnings.warn(
+            f"{context}: excluded or deduplicated {len(diagnostics)} row(s) from scientific use; "
+            "details are recorded in metadata",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    normalized = sorted(
+        normalized_by_key.values(),
+        key=lambda row: (
+            row["method"],
+            int(row["rank"]),
+            -1 if row["seed"] == "" else int(row["seed"]),
+        ),
+    )
+    return normalized, rejected, diagnostics
+
+
+def normalize_rank_values(values, context="rank values", *, warn=True):
+    normalized = []
+    diagnostics = []
+    for index, value in enumerate(values):
+        try:
+            normalized.append(_normalize_nonnegative_integer(value, "rank", positive=True))
+        except (TypeError, ValueError) as exc:
+            diagnostics.append(
+                {"context": context, "row_index": index, "reason": str(exc), "rank": value}
+            )
+    normalized = sorted(set(normalized))
+    if diagnostics and warn:
+        warnings.warn(
+            f"{context}: excluded {len(diagnostics)} malformed rank value(s); details are recorded in metadata",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    return normalized, diagnostics
 
 
 def normalized_frobenius_residual(reference, approximation):
@@ -215,9 +334,14 @@ def verify_matrix_svd_kernel(module, u, s, vh, rank, *, row_chunk=64):
     return maximum
 
 
-def aggregate_cp_reconstruction_rows(rows):
+def aggregate_cp_reconstruction_rows(rows, diagnostics=None):
+    normalized, _, row_diagnostics = normalize_reconstruction_rows(
+        rows, context="CP reconstruction aggregation"
+    )
+    if diagnostics is not None:
+        diagnostics.extend(row_diagnostics)
     grouped = defaultdict(list)
-    for row in rows:
+    for row in normalized:
         if row.get("method") == "cp" and row.get("status") == "completed":
             grouped[int(row["rank"])].append(float(row["actual_relative_squared_frobenius_error"]))
     output = []
@@ -248,6 +372,7 @@ def reconstruction_rows_for_conv(
     memory_efficient_mttkrp=True,
     mttkrp_rank_chunk_size=64,
     mttkrp_max_explicit_bytes=512 * 1024**2,
+    skip_keys=None,
     on_update=None,
 ):
     '''Compute deterministic matrix-SVD and multi-seed CP reconstruction rows.'''
@@ -256,6 +381,7 @@ def reconstruction_rows_for_conv(
     dense_parameters = dense_conv_parameter_count(shape, conv.bias is not None)
     rows = []
     failures = []
+    skip_keys = set(skip_keys or ())
 
     u, s, vh, svd_runtime, svd_device = output_mode_svd(weight, device=device)
     diagnostic = rank_energy_diagnostic(
@@ -268,6 +394,8 @@ def reconstruction_rows_for_conv(
     total_energy = float(torch.sum(s.to(torch.float64).square()))
     for rank in ranks:
         rank = min(int(rank), len(s))
+        if ("matrix_svd_output_unfolding", rank) in skip_keys:
+            continue
         max_bound, output_bound, mode_bounds = diagnostic_bounds(diagnostic, rank)
         parameters = matrix_svd_conv_parameter_count(shape, rank, conv.bias is not None)
         try:
@@ -327,6 +455,8 @@ def reconstruction_rows_for_conv(
         max_bound, output_bound, mode_bounds = diagnostic_bounds(diagnostic, int(rank))
         parameters = cp_conv_parameter_count(shape, rank, conv.bias is not None)
         for seed in seeds:
+            if ("cp", int(rank), int(seed)) in skip_keys:
+                continue
             try:
                 from src.smallnet.reproducibility import set_seed
 
@@ -395,7 +525,7 @@ def reconstruction_rows_for_conv(
     return rows, aggregate_cp_reconstruction_rows(rows), diagnostic, failures
 
 
-def write_unfolding_energy_figure(diagnostic, ranks, figures_dir):
+def write_unfolding_energy_figure(diagnostic, ranks, figures_dir, diagnostics=None):
     figures_dir = Path(figures_dir)
     figures_dir.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -411,7 +541,12 @@ def write_unfolding_energy_figure(diagnostic, ranks, figures_dir):
     for mode, group in frame.groupby("mode"):
         linestyle, width = styles[int(mode)]
         ax.plot(group["rank"], group["cumulative_energy"], linestyle=linestyle, linewidth=width, label=group["mode_name"].iloc[0])
-    for rank in ranks:
+    normalized_ranks, rank_diagnostics = normalize_rank_values(
+        ranks, context="unfolding-energy figure rank markers"
+    )
+    if diagnostics is not None:
+        diagnostics.extend(rank_diagnostics)
+    for rank in normalized_ranks:
         ax.axvline(rank, color="0.75", linewidth=0.6, zorder=0)
     ax.set_xlabel("Unfolding rank")
     ax.set_ylabel("Cumulative spectral energy $E_m(r)$")
@@ -428,10 +563,55 @@ def write_unfolding_energy_figure(diagnostic, ranks, figures_dir):
     return [str(data_path), *outputs]
 
 
-def write_reconstruction_figure(rows, figures_dir):
+def write_reconstruction_figure(rows, figures_dir, diagnostics=None):
     figures_dir = Path(figures_dir)
     figures_dir.mkdir(parents=True, exist_ok=True)
-    frame = pd.DataFrame([row for row in rows if row.get("status") == "completed"])
+    normalized, _, row_diagnostics = normalize_reconstruction_rows(
+        rows, context="reconstruction-error figure"
+    )
+    if diagnostics is not None:
+        diagnostics.extend(row_diagnostics)
+    frame = pd.DataFrame([row for row in normalized if row.get("status") == "completed"])
+    if frame.empty:
+        raise ValueError("No valid completed scientific rows are available for the reconstruction figure")
+    frame["rank"] = pd.to_numeric(frame["rank"], errors="coerce")
+    malformed_rank = frame["rank"].isna()
+    if malformed_rank.any():
+        raise AssertionError("Normalized reconstruction rows unexpectedly contain malformed ranks")
+    frame["rank"] = frame["rank"].astype("int64")
+    if "seed" in frame:
+        frame["seed"] = pd.to_numeric(frame["seed"], errors="coerce").astype("Int64")
+    for column in (
+        "max_unfolding_tail_bound_squared",
+        "actual_relative_squared_frobenius_error",
+    ):
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    missing_values = frame[
+        ["max_unfolding_tail_bound_squared", "actual_relative_squared_frobenius_error"]
+    ].isna().any(axis=1)
+    if missing_values.any():
+        value_diagnostics = [
+            {
+                "context": "reconstruction-error figure",
+                "row_index": int(index),
+                "reason": "missing or nonnumeric reconstruction figure value",
+                "method": row.get("method", ""),
+                "rank": row.get("rank", ""),
+                "seed": row.get("seed", ""),
+            }
+            for index, row in frame[missing_values].iterrows()
+        ]
+        warnings.warn(
+            "reconstruction-error figure: excluded rows with nonnumeric plotted values; "
+            "details are recorded in metadata",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        if diagnostics is not None:
+            diagnostics.extend(value_diagnostics)
+        frame = frame[~missing_values].copy()
+    if frame.empty:
+        raise ValueError("No valid completed rows contain numeric reconstruction figure values")
     data_path = figures_dir / "figure_b_reconstruction_squared_error.csv"
     frame.to_csv(data_path, index=False)
     fig, ax = plt.subplots(figsize=(6.6, 4.2))
@@ -460,10 +640,22 @@ def write_reconstruction_figure(rows, figures_dir):
     return [str(data_path), *outputs]
 
 
-def write_zero_shot_figure(rows, figures_dir, split="test"):
+def write_zero_shot_figure(rows, figures_dir, split="test", diagnostics=None):
     figures_dir = Path(figures_dir)
     figures_dir.mkdir(parents=True, exist_ok=True)
-    frame = pd.DataFrame([row for row in rows if row.get("split") == split and row.get("status", "completed") == "completed"])
+    selected = [
+        dict(row)
+        for row in rows
+        if row.get("split") == split and row.get("status", "completed") == "completed"
+    ]
+    dense_rows = [row for row in selected if row.get("method") == "dense"]
+    scientific, _, row_diagnostics = normalize_reconstruction_rows(
+        [row for row in selected if row.get("method") != "dense"],
+        context=f"zero-shot {split} figure",
+    )
+    if diagnostics is not None:
+        diagnostics.extend(row_diagnostics)
+    frame = pd.DataFrame([*dense_rows, *scientific])
     data_path = figures_dir / "figure_c_zero_shot_present_class_miou.csv"
     frame.to_csv(data_path, index=False)
     if frame.empty:
@@ -474,10 +666,20 @@ def write_zero_shot_figure(rows, figures_dir, split="test"):
         ax.axhline(float(dense["present_class_miou"].iloc[0]), color="k", linestyle=":", label="Dense baseline")
     cp = frame[frame["method"] == "cp"]
     if not cp.empty:
+        cp = cp.copy()
+        cp["rank"] = pd.to_numeric(cp["rank"], errors="coerce")
+        cp["present_class_miou"] = pd.to_numeric(cp["present_class_miou"], errors="coerce")
+        cp = cp.dropna(subset=["rank", "present_class_miou"])
         ax.scatter(cp["rank"], cp["present_class_miou"], marker="o", facecolors="none", edgecolors="tab:blue", label="CP individual seeds")
         means = cp.groupby("rank", as_index=False)["present_class_miou"].mean()
         ax.plot(means["rank"], means["present_class_miou"], color="tab:blue", label="CP mean")
-    matrix = frame[frame["method"] == "matrix_svd_output_unfolding"].sort_values("rank")
+    matrix = frame[frame["method"] == "matrix_svd_output_unfolding"].copy()
+    if not matrix.empty:
+        matrix["rank"] = pd.to_numeric(matrix["rank"], errors="coerce")
+        matrix["present_class_miou"] = pd.to_numeric(
+            matrix["present_class_miou"], errors="coerce"
+        )
+        matrix = matrix.dropna(subset=["rank", "present_class_miou"]).sort_values("rank")
     if not matrix.empty:
         ax.plot(matrix["rank"], matrix["present_class_miou"], "s--", color="tab:orange", label="Output-unfolding truncated SVD")
     ax.set_xlabel("Rank")
@@ -495,23 +697,62 @@ def write_zero_shot_figure(rows, figures_dir, split="test"):
     return [str(data_path), *outputs]
 
 
-def join_structural_tradeoffs(reconstruction_rows, evaluation_rows):
+def join_structural_tradeoffs(reconstruction_rows, evaluation_rows, diagnostics=None):
     '''Join one reconstruction row to its validation and test evaluation rows.'''
+    normalized_reconstruction, _, reconstruction_diagnostics = normalize_reconstruction_rows(
+        reconstruction_rows, context="structural tradeoff reconstruction join"
+    )
+    if diagnostics is not None:
+        diagnostics.extend(reconstruction_diagnostics)
     reconstruction = {
-        (str(row.get("method")), str(row.get("rank", "")), str(row.get("seed", ""))): row
-        for row in reconstruction_rows
+        scientific_reconstruction_key(row): row
+        for row in normalized_reconstruction
         if row.get("status", "completed") == "completed"
     }
     grouped = defaultdict(dict)
-    for row in evaluation_rows:
+    evaluation_diagnostics = []
+    for index, original in enumerate(evaluation_rows):
+        row = dict(original)
         if row.get("status", "completed") != "completed":
             continue
-        key = (str(row.get("method")), str(row.get("rank", "")), str(row.get("seed", "")))
+        if row.get("method") == "dense":
+            key = ("dense",)
+            row["rank"] = ""
+            row["seed"] = ""
+        else:
+            try:
+                key = scientific_reconstruction_key(row)
+                row["rank"] = key[1]
+                row["seed"] = key[2] if key[0] == "cp" else ""
+            except (TypeError, ValueError) as exc:
+                evaluation_diagnostics.append(
+                    {
+                        "context": "structural tradeoff evaluation join",
+                        "row_index": index,
+                        "reason": str(exc),
+                        "method": row.get("method", ""),
+                        "rank": row.get("rank", ""),
+                        "seed": row.get("seed", ""),
+                    }
+                )
+                continue
         grouped[key][str(row["split"])] = row
+
+    if evaluation_diagnostics:
+        warnings.warn(
+            "structural tradeoff evaluation join: excluded malformed scientific rows; "
+            "details are recorded in metadata",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        if diagnostics is not None:
+            diagnostics.extend(evaluation_diagnostics)
 
     output = []
     for key, splits in sorted(grouped.items()):
-        method, rank, seed = key
+        method = key[0]
+        rank = "" if method == "dense" else key[1]
+        seed = key[2] if method == "cp" else ""
         any_row = next(iter(splits.values()))
         reconstruction_row = reconstruction.get(key, {})
         dense_target = float(any_row.get("dense_target_layer_parameter_count", 0) or 0)

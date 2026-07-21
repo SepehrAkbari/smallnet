@@ -3,12 +3,13 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import torch
 import torch.nn as nn
 
 from src.smallnet.diagnostics import cp_lower_bound_tail, cp_tensor_from_factors, unfold_tensor
-from src.smallnet.experiment import run_reconstruction
+from src.smallnet.experiment import run_reconstruction, run_reconstruction_figures
 from src.smallnet.factorization import MatrixLowRankConv2d
 from src.smallnet.reproducibility import set_seed
 from src.smallnet.structural import (
@@ -20,6 +21,7 @@ from src.smallnet.structural import (
     join_structural_tradeoffs,
     matrix_svd_conv_parameter_count,
     normalized_frobenius_residual,
+    normalize_reconstruction_rows,
     output_mode_svd,
     reconstruction_rows_for_conv,
     write_reconstruction_figure,
@@ -109,6 +111,39 @@ class StructuralMathTests(unittest.TestCase):
 
 
 class StructuralArtifactTests(unittest.TestCase):
+    def test_mixed_rank_and_seed_types_are_normalized_for_figures(self):
+        rows = [
+            {"method": "cp", "rank": 32, "seed": 0, "status": "completed", "actual_relative_squared_frobenius_error": 0.8, "max_unfolding_tail_bound_squared": 0.6},
+            {"method": "cp", "rank": "32", "seed": "1", "status": "completed", "actual_relative_squared_frobenius_error": 0.7, "max_unfolding_tail_bound_squared": 0.6},
+            {"method": "matrix_svd_output_unfolding", "rank": 64, "seed": "", "status": "completed", "actual_relative_squared_frobenius_error": 0.5, "max_unfolding_tail_bound_squared": 0.4},
+            {"method": "cp", "rank": "64", "seed": 0, "status": "completed", "actual_relative_squared_frobenius_error": 0.6, "max_unfolding_tail_bound_squared": 0.4},
+            {"method": "cp", "rank": "mean", "seed": 0, "status": "completed", "actual_relative_squared_frobenius_error": 0.1, "max_unfolding_tail_bound_squared": 0.1},
+            {"method": "all", "rank": "", "seed": "", "status": "completed"},
+        ]
+        diagnostics = []
+        with tempfile.TemporaryDirectory() as tmp, self.assertWarns(RuntimeWarning):
+            paths = write_reconstruction_figure(rows, tmp, diagnostics=diagnostics)
+            with open(paths[0], newline="") as handle:
+                exported = list(csv.DictReader(handle))
+
+        self.assertEqual({int(row["rank"]) for row in exported}, {32, 64})
+        self.assertNotIn("mean", {row["rank"] for row in exported})
+        self.assertEqual(len(diagnostics), 2)
+
+    def test_duplicate_scientific_keys_are_deduplicated_after_type_normalization(self):
+        rows = [
+            {"method": "cp", "rank": 32, "seed": 0, "status": "completed"},
+            {"method": "cp", "rank": "32", "seed": "0", "status": "completed"},
+            {"method": "matrix_svd_output_unfolding", "rank": 32, "seed": "", "status": "completed"},
+            {"method": "matrix_svd_output_unfolding", "rank": "32", "seed": None, "status": "completed"},
+        ]
+        with self.assertWarns(RuntimeWarning):
+            normalized, rejected, diagnostics = normalize_reconstruction_rows(rows, context="unit mixed duplicates")
+        self.assertEqual(len(normalized), 2)
+        self.assertEqual(rejected, [])
+        self.assertEqual(len(diagnostics), 2)
+        self.assertEqual({type(row["rank"]) for row in normalized}, {int})
+
     def test_cp_seed_aggregation_retains_mean_std_min_and_max(self):
         rows = [
             {"method": "cp", "rank": 2, "seed": seed, "status": "completed", "actual_relative_squared_frobenius_error": value}
@@ -157,6 +192,59 @@ class StructuralArtifactTests(unittest.TestCase):
                 metadata = json.load(handle)
             self.assertEqual(metadata["failures"], [])
             self.assertEqual(metadata["canonical_cp_seeds"], [0, 1, 2])
+
+    def test_figure_failure_is_nonfatal_and_rerun_reuses_completed_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = {
+                "experiment_id": "resume_unit",
+                "output_dir": "out",
+                "model": {"target_layer": "0"},
+                "cp": {"init": "random", "n_iter_max": 1},
+                "reconstruction": {
+                    "synthetic_tensor_shape": [5, 4, 2, 2],
+                    "synthetic_seed": 7,
+                    "ranks": [1],
+                    "seeds": [0, 1],
+                    "n_iter_max": 1,
+                },
+                "paper": {"figures_dir": "out/figures"},
+            }
+            with mock.patch(
+                "src.smallnet.experiment.write_reconstruction_figure",
+                side_effect=TypeError("simulated mixed-rank figure failure"),
+            ):
+                metadata_path = run_reconstruction(config, root, torch.device("cpu"))
+
+            with open(metadata_path) as handle:
+                metadata = json.load(handle)
+            self.assertEqual(len(metadata["figure_generation_failures"]), 1)
+            summary_path = root / "out/reconstruction_summary.csv"
+            with open(summary_path, newline="") as handle:
+                saved_before = list(csv.DictReader(handle))
+            self.assertEqual(len(saved_before), 3)
+
+            with mock.patch(
+                "src.smallnet.experiment.reconstruction_rows_for_conv",
+                side_effect=AssertionError("completed decompositions must not rerun"),
+            ):
+                figures_metadata_path = run_reconstruction(config, root, torch.device("cpu"))
+
+            with open(figures_metadata_path) as handle:
+                figures_metadata = json.load(handle)
+            self.assertEqual(figures_metadata["figure_generation_failures"], [])
+            self.assertTrue(any(path.endswith("figure_b_reconstruction_squared_error.pdf") for path in figures_metadata["figure_outputs"]))
+            with open(summary_path, newline="") as handle:
+                saved_after = list(csv.DictReader(handle))
+            normalized, rejected, diagnostics = normalize_reconstruction_rows(saved_after, warn=False)
+            self.assertEqual(len(normalized), 3)
+            self.assertEqual(rejected, [])
+            self.assertEqual(diagnostics, [])
+
+            explicit_figures_metadata = run_reconstruction_figures(
+                config, root, device=torch.device("cpu")
+            )
+            self.assertTrue(Path(explicit_figures_metadata).is_file())
 
     def test_structural_join_matches_reconstruction_and_split_rows(self):
         reconstruction = [{
