@@ -1,0 +1,124 @@
+{
+  "experiment_id": "camvid_vgg_cp_diagnostic_paper",
+  "output_dir": "results/camvid_vgg_cp",
+  "device": null,
+  "dataset": {
+    "name": "CamVid",
+    "root": "data/CamVid",
+    "class_dict_path": "data/CamVid/class_dict.csv",
+    "image_size": [
+      352,
+      480
+    ],
+    "num_classes": 32,
+    "splits": [
+      "train",
+      "val",
+      "test"
+    ],
+    "ignore_index": 30,
+    "ignore_class_name": "Void"
+  },
+  "model": {
+    "family": "vgg16_fcn32s",
+    "pretrained": false,
+    "num_classes": 32,
+    "dense_checkpoint": "model/best_model.pth",
+    "target_layer": "classifier.0"
+  },
+  "cp": {
+    "factorization": "cp",
+    "ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "zero_shot_ranks": [
+      64,
+      128,
+      256
+    ],
+    "fine_tune_ranks": [
+      64,
+      128,
+      256
+    ],
+    "profile_ranks": [],
+    "seeds": [
+      0
+    ],
+    "init": "random",
+    "n_iter_max": 10,
+    "save_zero_shot_checkpoints": false,
+    "save_finetuned_checkpoints": false
+  },
+  "existing_finetuned_checkpoints": {
+    "64": "model/finetuned_rank_64.pth",
+    "128": "model/finetuned_rank_128.pth",
+    "256": "model/finetuned_rank_256.pth"
+  },
+  "training": {
+    "training_epochs": 200,
+    "fine_tuning_epochs": 10,
+    "batch_size": 4,
+    "learning_rate": 0.0001,
+    "num_workers": 2,
+    "random_seeds": [
+      0
+    ],
+    "deterministic": true,
+    "freeze_features": true
+  },
+  "evaluation": {
+    "splits": [
+      "val",
+      "test"
+    ],
+    "batch_size": 4,
+    "num_workers": 2
+  },
+  "profiling": {
+    "batch_size": 1,
+    "input_size": [
+      1,
+      3,
+      352,
+      480
+    ],
+    "latency": true,
+    "warmup": 20,
+    "iterations": 100,
+    "include_existing_finetuned": true
+  },
+  "rank_diagnostics": {
+    "layers": [
+      "classifier.0.weight"
+    ],
+    "modes": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "thresholds": [
+      0.9,
+      0.95,
+      0.99
+    ],
+    "fixed_ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ]
+  },
+  "paper": {
+    "tables_dir": "results/paper/tables",
+    "figures_dir": "results/paper/figures",
+    "manifest_path": "results/paper/MANIFEST.json"
+  },
+  "_config_path": "configs/camvid_vgg_cp_colab_remaining.json"
+}

@@ -1,0 +1,14 @@
+\begin{table}
+\caption{Parameter, MAC, and latency profiling results.}
+\label{tab:profile-results}
+\begin{tabular}{lrlllrrrrrrrrrlrlrrrr}
+\toprule
+checkpoint & dense\_target\_layer\_parameters & device & device\_name & label & latency\_iterations & latency\_max\_ms & latency\_mean\_ms & latency\_median\_ms & latency\_min\_ms & latency\_ms & latency\_std\_ms & latency\_warmup\_iterations & macs & model\_kind & parameters & rank & target\_layer\_compression\_ratio & target\_layer\_parameters & total\_compression\_ratio & total\_parameters \\
+\midrule
+/content/smallnet/model/best\_model.pth & 102764544 & cuda & Tesla T4 & dense & 100 & 116.9399 & 115.0620 & 114.8949 & 113.2375 & 115.0620 & 0.8253 & 20 & 71422771200 & dense & 134391648 & dense & 1.0000 & 102764544 & 1.0000 & 134391648 \\
+/content/smallnet/model/finetuned\_rank\_64.pth & 102764544 & cuda & Tesla T4 & cp\_rank\_64\_existing\_finetuned & 100 & 49.3848 & 47.5260 & 47.3776 & 46.1784 & 47.5260 & 0.7840 & 20 & 54516116160 & cp\_finetuned\_existing & 31927072 & 64 & 0.0029 & 299968 & 0.2376 & 31927072 \\
+/content/smallnet/model/finetuned\_rank\_128.pth & 102764544 & cuda & Tesla T4 & cp\_rank\_128\_existing\_finetuned & 100 & 52.8634 & 51.6040 & 51.6116 & 49.8220 & 51.6040 & 0.6809 & 20 & 54564935040 & cp\_finetuned\_existing & 32222944 & 128 & 0.0058 & 595840 & 0.2398 & 32222944 \\
+/content/smallnet/model/finetuned\_rank\_256.pth & 102764544 & cuda & Tesla T4 & cp\_rank\_256\_existing\_finetuned & 100 & 61.4373 & 60.4875 & 60.5164 & 58.5698 & 60.4875 & 0.4955 & 20 & 54662572800 & cp\_finetuned\_existing & 32814688 & 256 & 0.0116 & 1187584 & 0.2442 & 32814688 \\
+\bottomrule
+\end{tabular}
+\end{table}

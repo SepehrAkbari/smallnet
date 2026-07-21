@@ -1,0 +1,2900 @@
+{
+  "schema": "smallnet.dataset_validation.v1",
+  "environment": {
+    "created_utc": "2026-07-21T17:40:06.907599+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
+    "device": "cpu",
+    "device_name": "CPU",
+    "git_commit": "d0a3c7febfa11b2a8fb5825fa3a376b169022553",
+    "git_dirty": true
+  },
+  "status": "pass",
+  "dataset_source": {
+    "name": "CamVid",
+    "source_description": "Full original CamVid dataset available online; exact hosting URL must be supplied by the authors before publication.",
+    "source_url": null,
+    "source_archive_identifier": null
+  },
+  "split_convention": "Repository expects CamVid images in train/val/test and RGB label masks in train_labels/val_labels/test_labels.",
+  "class_dict_path": "/content/smallnet/data/CamVid/class_dict.csv",
+  "class_dict_sha256": "228a06d60032bcf7fe01683a7ac03911875268494143029dacc1df8201fbb48b",
+  "num_classes": 32,
+  "configured_num_classes": 32,
+  "ignore_index": 30,
+  "ignore_class_name": "Void",
+  "pairing_rule": {
+    "image_key": "stem",
+    "mask_key": "stem",
+    "mask_suffix_to_remove": "_L"
+  },
+  "unknown_color_policy": "map_to_ignore",
+  "strict_unknown_colors": false,
+  "unknown_color_ignore_index": 30,
+  "unknown_color_resolution": {
+    "status": "author_approved",
+    "decision": "Map only unknown RGB pixels to the configured Void index.",
+    "affected_mask": "test_labels/Seq05VD_f02610_L.png",
+    "affected_pixel_count": 175,
+    "current_sha256": "e080f9c41840c6753ab3e7577105862c2822c018b778b30f2ba13ccc931ad682",
+    "reference_sha256": "e080f9c41840c6753ab3e7577105862c2822c018b778b30f2ba13ccc931ad682",
+    "reference_provenance": "Author-supplied Kaggle CamVid copy; exact dataset URL and archive identifier remain TODO."
+  },
+  "unknown_pixels_mapped_to_ignore": 175,
+  "class_dictionary_errors": [],
+  "splits": [
+    {
+      "split": "train",
+      "images_dir": "/content/smallnet/data/CamVid/train",
+      "masks_dir": "/content/smallnet/data/CamVid/train_labels",
+      "image_count": 369,
+      "mask_count": 369,
+      "matched_pair_count": 369,
+      "missing_masks": [],
+      "unmatched_masks": [],
+      "duplicate_or_ambiguous_keys": {
+        "image_keys": {},
+        "mask_keys": {},
+        "ambiguous_keys": {}
+      },
+      "image_dimension_distribution": {
+        "720x960": 369
+      },
+      "mask_dimension_distribution": {
+        "720x960": 369
+      },
+      "unknown_rgb_values": [],
+      "per_class_pixel_counts": {
+        "0": 12045,
+        "1": 119888,
+        "2": 1206357,
+        "3": 108089,
+        "4": 58191107,
+        "5": 7954394,
+        "6": 66140,
+        "7": 79955,
+        "8": 2641708,
+        "9": 4264601,
+        "10": 4767634,
+        "11": 28591,
+        "12": 1673702,
+        "13": 14074,
+        "14": 1196853,
+        "15": 898329,
+        "16": 1579269,
+        "17": 72804241,
+        "18": 620615,
+        "19": 17412640,
+        "20": 330974,
+        "21": 38573751,
+        "22": 1349654,
+        "23": 9874,
+        "24": 925123,
+        "25": 0,
+        "26": 25820691,
+        "27": 476318,
+        "28": 4,
+        "29": 2090713,
+        "30": 6693505,
+        "31": 3141961
+      },
+      "total_mask_pixels": 255052800,
+      "errors": []
+    },
+    {
+      "split": "val",
+      "images_dir": "/content/smallnet/data/CamVid/val",
+      "masks_dir": "/content/smallnet/data/CamVid/val_labels",
+      "image_count": 100,
+      "mask_count": 100,
+      "matched_pair_count": 100,
+      "missing_masks": [],
+      "unmatched_masks": [],
+      "duplicate_or_ambiguous_keys": {
+        "image_keys": {},
+        "mask_keys": {},
+        "ambiguous_keys": {}
+      },
+      "image_dimension_distribution": {
+        "720x960": 100
+      },
+      "mask_dimension_distribution": {
+        "720x960": 100
+      },
+      "unknown_rgb_values": [],
+      "per_class_pixel_counts": {
+        "0": 2292,
+        "1": 156904,
+        "2": 336051,
+        "3": 19639,
+        "4": 15496688,
+        "5": 2498458,
+        "6": 26482,
+        "7": 14177,
+        "8": 688926,
+        "9": 877159,
+        "10": 1179841,
+        "11": 33768,
+        "12": 415330,
+        "13": 4346,
+        "14": 252953,
+        "15": 169067,
+        "16": 420746,
+        "17": 19889853,
+        "18": 275909,
+        "19": 4131573,
+        "20": 76051,
+        "21": 10835168,
+        "22": 512933,
+        "23": 4303,
+        "24": 293754,
+        "25": 0,
+        "26": 7058225,
+        "27": 293946,
+        "28": 0,
+        "29": 651882,
+        "30": 1680355,
+        "31": 823221
+      },
+      "total_mask_pixels": 69120000,
+      "errors": []
+    },
+    {
+      "split": "test",
+      "images_dir": "/content/smallnet/data/CamVid/test",
+      "masks_dir": "/content/smallnet/data/CamVid/test_labels",
+      "image_count": 232,
+      "mask_count": 232,
+      "matched_pair_count": 232,
+      "missing_masks": [],
+      "unmatched_masks": [],
+      "duplicate_or_ambiguous_keys": {
+        "image_keys": {},
+        "mask_keys": {},
+        "ambiguous_keys": {}
+      },
+      "image_dimension_distribution": {
+        "720x960": 232
+      },
+      "mask_dimension_distribution": {
+        "720x960": 232
+      },
+      "unknown_rgb_values": [
+        {
+          "rgb": [
+            2,
+            2,
+            0
+          ],
+          "pixel_count": 3,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              66,
+              321
+            ],
+            [
+              153,
+              349
+            ],
+            [
+              155,
+              350
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            2,
+            2,
+            2
+          ],
+          "pixel_count": 5,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              56,
+              313
+            ],
+            [
+              58,
+              315
+            ],
+            [
+              59,
+              316
+            ],
+            [
+              64,
+              318
+            ],
+            [
+              65,
+              319
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            5,
+            5,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              4,
+              445
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            8,
+            8,
+            8
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              52,
+              309
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            15,
+            15,
+            15
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              61,
+              317
+            ],
+            [
+              163,
+              494
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            18,
+            18,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              344
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            0
+          ],
+          "pixel_count": 15,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              342
+            ],
+            [
+              2,
+              343
+            ],
+            [
+              3,
+              385
+            ],
+            [
+              3,
+              386
+            ],
+            [
+              3,
+              387
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            26
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              311
+            ],
+            [
+              2,
+              312
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            29,
+            29,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              4,
+              435
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            36,
+            36,
+            36
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              314
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            47,
+            47,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              152,
+              349
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            0
+          ],
+          "pixel_count": 3,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              384
+            ],
+            [
+              154,
+              350
+            ],
+            [
+              156,
+              351
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            48
+          ],
+          "pixel_count": 4,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              57,
+              313
+            ],
+            [
+              58,
+              314
+            ],
+            [
+              60,
+              316
+            ],
+            [
+              63,
+              318
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              65,
+              320
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            50
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              66,
+              322
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            0
+          ],
+          "pixel_count": 14,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              377
+            ],
+            [
+              3,
+              378
+            ],
+            [
+              3,
+              379
+            ],
+            [
+              3,
+              380
+            ],
+            [
+              3,
+              381
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            51
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              315
+            ],
+            [
+              177,
+              465
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            60,
+            60,
+            0
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              68,
+              323
+            ],
+            [
+              69,
+              323
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            63,
+            63,
+            63
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              51,
+              306
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            0
+          ],
+          "pixel_count": 14,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              366
+            ],
+            [
+              3,
+              367
+            ],
+            [
+              4,
+              416
+            ],
+            [
+              4,
+              417
+            ],
+            [
+              4,
+              418
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            77
+          ],
+          "pixel_count": 4,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              323
+            ],
+            [
+              2,
+              325
+            ],
+            [
+              2,
+              326
+            ],
+            [
+              177,
+              452
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            92,
+            92,
+            92
+          ],
+          "pixel_count": 3,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              56,
+              312
+            ],
+            [
+              59,
+              315
+            ],
+            [
+              64,
+              319
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            102,
+            102,
+            0
+          ],
+          "pixel_count": 5,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              4,
+              405
+            ],
+            [
+              4,
+              406
+            ],
+            [
+              4,
+              407
+            ],
+            [
+              4,
+              408
+            ],
+            [
+              4,
+              409
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            108,
+            108,
+            0
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              153,
+              350
+            ],
+            [
+              155,
+              351
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            110,
+            110,
+            110
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              52,
+              308
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            111,
+            111,
+            0
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              65,
+              321
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            113,
+            113,
+            113
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              62,
+              317
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            116,
+            116,
+            116
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              58,
+              313
+            ],
+            [
+              61,
+              316
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            125,
+            125,
+            125
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              51,
+              305
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            3
+          ],
+          "pixel_count": 4,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              111,
+              341
+            ],
+            [
+              147,
+              347
+            ],
+            [
+              161,
+              355
+            ],
+            [
+              162,
+              356
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            6
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              354
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            21
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              164,
+              357
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            26
+          ],
+          "pixel_count": 14,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              355
+            ],
+            [
+              3,
+              356
+            ],
+            [
+              3,
+              357
+            ],
+            [
+              3,
+              358
+            ],
+            [
+              3,
+              359
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            30
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              364
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            50
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              4,
+              415
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            51
+          ],
+          "pixel_count": 21,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              365
+            ],
+            [
+              3,
+              368
+            ],
+            [
+              3,
+              369
+            ],
+            [
+              3,
+              370
+            ],
+            [
+              3,
+              371
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            54
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              374
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            63
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              67,
+              323
+            ],
+            [
+              112,
+              341
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            68
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              70,
+              323
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            69
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              113,
+              341
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            75
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              4,
+              425
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            77
+          ],
+          "pixel_count": 5,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              333
+            ],
+            [
+              3,
+              375
+            ],
+            [
+              3,
+              376
+            ],
+            [
+              4,
+              428
+            ],
+            [
+              4,
+              429
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            78
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              163,
+              356
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            86
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              334
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            92
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              147,
+              346
+            ],
+            [
+              162,
+              355
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            102
+          ],
+          "pixel_count": 12,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              2,
+              335
+            ],
+            [
+              2,
+              336
+            ],
+            [
+              2,
+              337
+            ],
+            [
+              2,
+              338
+            ],
+            [
+              2,
+              339
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            104
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              3,
+              394
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            113
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              165,
+              357
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            123
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              79,
+              324
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            126
+          ],
+          "pixel_count": 2,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              160,
+              354
+            ],
+            [
+              164,
+              356
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            136,
+            136,
+            15
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              176,
+              377
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            138,
+            138,
+            20
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              175,
+              376
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            154,
+            154,
+            51
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              177,
+              380
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            171,
+            171,
+            86
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              174,
+              375
+            ]
+          ]
+        },
+        {
+          "rgb": [
+            191,
+            191,
+            126
+          ],
+          "pixel_count": 1,
+          "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+          "example_coordinates_yx": [
+            [
+              174,
+              376
+            ]
+          ]
+        }
+      ],
+      "per_class_pixel_counts": {
+        "0": 9227,
+        "1": 33968,
+        "2": 1000137,
+        "3": 90470,
+        "4": 36615069,
+        "5": 6043741,
+        "6": 53306,
+        "7": 42074,
+        "8": 1452350,
+        "9": 1779301,
+        "10": 2294790,
+        "11": 4308,
+        "12": 755379,
+        "13": 30257,
+        "14": 483681,
+        "15": 553125,
+        "16": 1097196,
+        "17": 39532702,
+        "18": 340179,
+        "19": 9212977,
+        "20": 167219,
+        "21": 27392248,
+        "22": 1538591,
+        "23": 1581,
+        "24": 586715,
+        "25": 0,
+        "26": 17685203,
+        "27": 1835435,
+        "28": 0,
+        "29": 951959,
+        "30": 6198327,
+        "31": 2576710
+      },
+      "total_mask_pixels": 160358400,
+      "errors": []
+    }
+  ],
+  "unknown_rgb_values": [
+    {
+      "rgb": [
+        2,
+        2,
+        0
+      ],
+      "pixel_count": 3,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          66,
+          321
+        ],
+        [
+          153,
+          349
+        ],
+        [
+          155,
+          350
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        2,
+        2,
+        2
+      ],
+      "pixel_count": 5,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          56,
+          313
+        ],
+        [
+          58,
+          315
+        ],
+        [
+          59,
+          316
+        ],
+        [
+          64,
+          318
+        ],
+        [
+          65,
+          319
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        5,
+        5,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          4,
+          445
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        8,
+        8,
+        8
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          52,
+          309
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        15,
+        15,
+        15
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          61,
+          317
+        ],
+        [
+          163,
+          494
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        18,
+        18,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          344
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        26,
+        26,
+        0
+      ],
+      "pixel_count": 15,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          342
+        ],
+        [
+          2,
+          343
+        ],
+        [
+          3,
+          385
+        ],
+        [
+          3,
+          386
+        ],
+        [
+          3,
+          387
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        26,
+        26,
+        26
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          311
+        ],
+        [
+          2,
+          312
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        29,
+        29,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          4,
+          435
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        36,
+        36,
+        36
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          314
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        47,
+        47,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          152,
+          349
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        48,
+        48,
+        0
+      ],
+      "pixel_count": 3,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          384
+        ],
+        [
+          154,
+          350
+        ],
+        [
+          156,
+          351
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        48,
+        48,
+        48
+      ],
+      "pixel_count": 4,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          57,
+          313
+        ],
+        [
+          58,
+          314
+        ],
+        [
+          60,
+          316
+        ],
+        [
+          63,
+          318
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        50,
+        50,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          65,
+          320
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        50,
+        50,
+        50
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          66,
+          322
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        51,
+        51,
+        0
+      ],
+      "pixel_count": 14,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          377
+        ],
+        [
+          3,
+          378
+        ],
+        [
+          3,
+          379
+        ],
+        [
+          3,
+          380
+        ],
+        [
+          3,
+          381
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        51,
+        51,
+        51
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          315
+        ],
+        [
+          177,
+          465
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        60,
+        60,
+        0
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          68,
+          323
+        ],
+        [
+          69,
+          323
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        63,
+        63,
+        63
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          51,
+          306
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        77,
+        77,
+        0
+      ],
+      "pixel_count": 14,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          366
+        ],
+        [
+          3,
+          367
+        ],
+        [
+          4,
+          416
+        ],
+        [
+          4,
+          417
+        ],
+        [
+          4,
+          418
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        77,
+        77,
+        77
+      ],
+      "pixel_count": 4,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          323
+        ],
+        [
+          2,
+          325
+        ],
+        [
+          2,
+          326
+        ],
+        [
+          177,
+          452
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        92,
+        92,
+        92
+      ],
+      "pixel_count": 3,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          56,
+          312
+        ],
+        [
+          59,
+          315
+        ],
+        [
+          64,
+          319
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        102,
+        102,
+        0
+      ],
+      "pixel_count": 5,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          4,
+          405
+        ],
+        [
+          4,
+          406
+        ],
+        [
+          4,
+          407
+        ],
+        [
+          4,
+          408
+        ],
+        [
+          4,
+          409
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        108,
+        108,
+        0
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          153,
+          350
+        ],
+        [
+          155,
+          351
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        110,
+        110,
+        110
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          52,
+          308
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        111,
+        111,
+        0
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          65,
+          321
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        113,
+        113,
+        113
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          62,
+          317
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        116,
+        116,
+        116
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          58,
+          313
+        ],
+        [
+          61,
+          316
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        125,
+        125,
+        125
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          51,
+          305
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        3
+      ],
+      "pixel_count": 4,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          111,
+          341
+        ],
+        [
+          147,
+          347
+        ],
+        [
+          161,
+          355
+        ],
+        [
+          162,
+          356
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        6
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          354
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        21
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          164,
+          357
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        26
+      ],
+      "pixel_count": 14,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          355
+        ],
+        [
+          3,
+          356
+        ],
+        [
+          3,
+          357
+        ],
+        [
+          3,
+          358
+        ],
+        [
+          3,
+          359
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        30
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          364
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        50
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          4,
+          415
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        51
+      ],
+      "pixel_count": 21,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          365
+        ],
+        [
+          3,
+          368
+        ],
+        [
+          3,
+          369
+        ],
+        [
+          3,
+          370
+        ],
+        [
+          3,
+          371
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        54
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          374
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        63
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          67,
+          323
+        ],
+        [
+          112,
+          341
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        68
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          70,
+          323
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        69
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          113,
+          341
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        75
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          4,
+          425
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        77
+      ],
+      "pixel_count": 5,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          333
+        ],
+        [
+          3,
+          375
+        ],
+        [
+          3,
+          376
+        ],
+        [
+          4,
+          428
+        ],
+        [
+          4,
+          429
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        78
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          163,
+          356
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        86
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          334
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        92
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          147,
+          346
+        ],
+        [
+          162,
+          355
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        102
+      ],
+      "pixel_count": 12,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          2,
+          335
+        ],
+        [
+          2,
+          336
+        ],
+        [
+          2,
+          337
+        ],
+        [
+          2,
+          338
+        ],
+        [
+          2,
+          339
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        104
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          3,
+          394
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        113
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          165,
+          357
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        123
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          79,
+          324
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        126
+      ],
+      "pixel_count": 2,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          160,
+          354
+        ],
+        [
+          164,
+          356
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        136,
+        136,
+        15
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          176,
+          377
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        138,
+        138,
+        20
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          175,
+          376
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        154,
+        154,
+        51
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          177,
+          380
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        171,
+        171,
+        86
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          174,
+          375
+        ]
+      ],
+      "split": "test"
+    },
+    {
+      "rgb": [
+        191,
+        191,
+        126
+      ],
+      "pixel_count": 1,
+      "mask": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "example_coordinates_yx": [
+        [
+          174,
+          376
+        ]
+      ],
+      "split": "test"
+    }
+  ],
+  "total_inspected_mask_pixels": 484531200,
+  "unknown_colors_by_file": [
+    {
+      "mask_path": "/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png",
+      "total_unknown_pixels": 175,
+      "distinct_unknown_rgb_values": 55,
+      "bounding_box_ymin_xmin_ymax_xmax": [
+        2,
+        305,
+        177,
+        494
+      ],
+      "affected_proportion": 0.00025318287037037036,
+      "connected_region_count_4_neighbor": 25,
+      "all_unknown_pixels_in_one_connected_region": false,
+      "connected_region_sizes": [
+        41,
+        41,
+        12,
+        12,
+        11,
+        8,
+        7,
+        7,
+        7,
+        4,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "unknown_colors": [
+        {
+          "rgb": [
+            2,
+            2,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            2,
+            2,
+            2
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            5,
+            5,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            8,
+            8,
+            8
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            15,
+            15,
+            15
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            18,
+            18,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            0
+          ],
+          "pixel_count": 15
+        },
+        {
+          "rgb": [
+            26,
+            26,
+            26
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            29,
+            29,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            36,
+            36,
+            36
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            47,
+            47,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            0
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            48,
+            48,
+            48
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            50,
+            50,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            51,
+            51,
+            51
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            60,
+            60,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            63,
+            63,
+            63
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            0
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            77,
+            77,
+            77
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            92,
+            92,
+            92
+          ],
+          "pixel_count": 3
+        },
+        {
+          "rgb": [
+            102,
+            102,
+            0
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            108,
+            108,
+            0
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            110,
+            110,
+            110
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            111,
+            111,
+            0
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            113,
+            113,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            116,
+            116,
+            116
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            125,
+            125,
+            125
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            3
+          ],
+          "pixel_count": 4
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            6
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            21
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            26
+          ],
+          "pixel_count": 14
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            30
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            50
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            51
+          ],
+          "pixel_count": 21
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            54
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            63
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            68
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            69
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            75
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            77
+          ],
+          "pixel_count": 5
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            78
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            92
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            102
+          ],
+          "pixel_count": 12
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            104
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            113
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            123
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            128,
+            128,
+            126
+          ],
+          "pixel_count": 2
+        },
+        {
+          "rgb": [
+            136,
+            136,
+            15
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            138,
+            138,
+            20
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            154,
+            154,
+            51
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            171,
+            171,
+            86
+          ],
+          "pixel_count": 1
+        },
+        {
+          "rgb": [
+            191,
+            191,
+            126
+          ],
+          "pixel_count": 1
+        }
+      ]
+    }
+  ]
+}
