@@ -53,6 +53,17 @@ from src.smallnet.structural import (
     write_unfolding_energy_figure,
     write_zero_shot_figure,
 )
+from src.smallnet.cp_iteration_sensitivity import (
+    aggregate_cp_iteration_rows,
+    apply_residual_reduction_comparisons,
+    cp_iteration_rows_for_conv,
+    normalize_cp_iteration_rows,
+    reference_diagnostic_for_conv,
+    scientific_cp_iteration_key,
+    sensitivity_rank_ordering_changes,
+    write_cp_iteration_sensitivity_audit,
+    write_cp_iteration_sensitivity_figure,
+)
 
 
 def resolve_path(path, root):
@@ -100,6 +111,10 @@ def rank_config(config):
 
 def reconstruction_config(config):
     return config.get("reconstruction", {})
+
+
+def cp_iteration_sensitivity_config(config):
+    return config.get("cp_iteration_sensitivity", {})
 
 
 def existing_finetuned_config(config):
@@ -1053,6 +1068,397 @@ def run_reconstruction_figures(config, root, device=None, max_batches=None):
         },
         device=device,
     )
+
+
+def _read_cp_iteration_rows(path):
+    with open(path, newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _cp_iteration_reference_diagnostic(
+    config, root, output_dir, conv, ranks, device, checkpoint_hash
+):
+    '''Reuse the verified canonical spectrum, or compute it for standalone/synthetic runs.'''
+    if not cp_iteration_sensitivity_config(config).get("synthetic_tensor_shape"):
+        metadata_path = output_dir / "reconstruction_metadata.json"
+        if metadata_path.is_file():
+            metadata = load_manifest(metadata_path)
+            recorded_hash = metadata.get("dense_checkpoint_sha256", "")
+            if recorded_hash and recorded_hash != checkpoint_hash:
+                raise RuntimeError(
+                    "Canonical reconstruction metadata uses a different dense checkpoint; "
+                    "refusing to mix spectral references in the sensitivity experiment"
+                )
+            diagnostic = metadata.get("diagnostic")
+            if diagnostic:
+                return diagnostic, str(metadata_path)
+    return reference_diagnostic_for_conv(conv.weight, ranks, device), "computed_for_sensitivity_stage"
+
+
+def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
+    '''Run an isolated, resumable CP iteration-budget sensitivity experiment.'''
+    stage = "cp_iteration_sensitivity"
+    output_dir = prepare_run_outputs(config, root, stage)
+    sensitivity_cfg = cp_iteration_sensitivity_config(config)
+    recon_cfg = reconstruction_config(config)
+    canonical_ranks = [int(value) for value in sensitivity_cfg.get("ranks", [128, 256, 512])]
+    canonical_seeds = [int(value) for value in sensitivity_cfg.get("seeds", [0, 1, 2])]
+    canonical_budgets = [
+        int(value) for value in sensitivity_cfg.get("iteration_budgets", [10, 25, 50, 100])
+    ]
+    ranks = [int(value) for value in sensitivity_cfg.get("execution_ranks", canonical_ranks)]
+    seeds = [int(value) for value in sensitivity_cfg.get("execution_seeds", canonical_seeds)]
+    iteration_budgets = [
+        int(value)
+        for value in sensitivity_cfg.get("execution_iteration_budgets", canonical_budgets)
+    ]
+    if len(set(ranks)) != len(ranks) or any(value <= 0 for value in ranks):
+        raise ValueError("Sensitivity ranks must be unique positive integers")
+    if len(set(seeds)) != len(seeds) or any(value < 0 for value in seeds):
+        raise ValueError("Sensitivity seeds must be unique nonnegative integers")
+    if len(set(iteration_budgets)) != len(iteration_budgets) or any(
+        value <= 0 for value in iteration_budgets
+    ):
+        raise ValueError("Iteration budgets must be unique positive integers")
+    init = sensitivity_cfg.get("init", recon_cfg.get("init", cp_config(config).get("init", "random")))
+    tolerance = float(
+        sensitivity_cfg.get("numerical_tolerance", recon_cfg.get("numerical_tolerance", 1e-5))
+    )
+    memory_efficient_mttkrp = bool(
+        sensitivity_cfg.get(
+            "memory_efficient_mttkrp", recon_cfg.get("memory_efficient_mttkrp", True)
+        )
+    )
+    mttkrp_rank_chunk_size = int(
+        sensitivity_cfg.get(
+            "mttkrp_rank_chunk_size", recon_cfg.get("mttkrp_rank_chunk_size", 64)
+        )
+    )
+    mttkrp_max_explicit_bytes = int(
+        sensitivity_cfg.get(
+            "mttkrp_max_explicit_bytes",
+            recon_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2),
+        )
+    )
+    summary_path = output_dir / "cp_iteration_sensitivity_summary.csv"
+    raw_loaded = _read_cp_iteration_rows(summary_path) if summary_path.is_file() else []
+    normalized_loaded, preserved_raw_rows, row_diagnostics = normalize_cp_iteration_rows(
+        raw_loaded, context="incremental CP iteration-sensitivity CSV load"
+    )
+    persisted_rows = {scientific_cp_iteration_key(row): row for row in normalized_loaded}
+    requested_keys = {
+        ("cp", rank, seed, budget)
+        for rank in ranks
+        for seed in seeds
+        for budget in iteration_budgets
+    }
+    completed_keys = {
+        key for key, row in persisted_rows.items() if row.get("status") == "completed"
+    }
+    expected_initialization_hashes = {}
+    for row in normalized_loaded:
+        if row.get("status") != "completed":
+            continue
+        hash_value = str(row.get("initialization_hash_sha256", "")).strip()
+        if not hash_value:
+            raise RuntimeError(
+                "A completed sensitivity row lacks its initialization hash; refusing an unverifiable resume"
+            )
+        hash_key = (int(row["rank"]), int(row["seed"]))
+        previous = expected_initialization_hashes.setdefault(hash_key, hash_value)
+        if previous != hash_value:
+            raise RuntimeError(
+                f"Saved sensitivity rows contain inconsistent initial factors for {hash_key}: "
+                f"{previous} != {hash_value}"
+            )
+
+    def persist(new_rows):
+        normalized_new, rejected_new, new_diagnostics = normalize_cp_iteration_rows(
+            new_rows, context="incremental CP iteration-sensitivity append"
+        )
+        row_diagnostics.extend(new_diagnostics)
+        preserved_raw_rows.extend(rejected_new)
+        for row in normalized_new:
+            key = scientific_cp_iteration_key(row)
+            previous = persisted_rows.get(key)
+            if previous and previous.get("status") == "completed" and row.get("status") != "completed":
+                continue
+            persisted_rows[key] = row
+        compared_rows, comparison_diagnostics = apply_residual_reduction_comparisons(
+            [*persisted_rows.values(), *preserved_raw_rows]
+        )
+        row_diagnostics.extend(comparison_diagnostics)
+        normalized_compared, rejected_compared, _ = normalize_cp_iteration_rows(
+            compared_rows, context="incremental comparison persistence", warn=False
+        )
+        persisted_rows.clear()
+        persisted_rows.update(
+            {scientific_cp_iteration_key(row): row for row in normalized_compared}
+        )
+        preserved_raw_rows[:] = rejected_compared
+        write_csv(summary_path, [*persisted_rows.values(), *preserved_raw_rows])
+
+    conv = None
+    diagnostic = None
+    reference_source = ""
+    checkpoint_hash = ""
+    new_failures = []
+    initialization_diagnostics = []
+    if requested_keys - completed_keys:
+        synthetic_shape = sensitivity_cfg.get("synthetic_tensor_shape")
+        if synthetic_shape:
+            cout, cin, kh, kw = map(int, synthetic_shape)
+            set_seed(int(sensitivity_cfg.get("synthetic_seed", 123)), deterministic=True)
+            conv = nn.Conv2d(
+                cin,
+                cout,
+                (kh, kw),
+                bias=bool(sensitivity_cfg.get("synthetic_bias", True)),
+            )
+            checkpoint_hash = "synthetic"
+        else:
+            conv = _reconstruction_conv(config, root)
+            checkpoint_hash = sha256_file(dense_checkpoint_path(config, root))
+        diagnostic, reference_source = _cp_iteration_reference_diagnostic(
+            config, root, output_dir, conv, canonical_ranks, device, checkpoint_hash
+        )
+        new_rows, new_failures, initialization_diagnostics = cp_iteration_rows_for_conv(
+            conv,
+            ranks,
+            seeds,
+            iteration_budgets,
+            init,
+            device,
+            diagnostic,
+            checkpoint_hash,
+            tolerance=tolerance,
+            memory_efficient_mttkrp=memory_efficient_mttkrp,
+            mttkrp_rank_chunk_size=mttkrp_rank_chunk_size,
+            mttkrp_max_explicit_bytes=mttkrp_max_explicit_bytes,
+            skip_keys=completed_keys,
+            expected_initialization_hashes=expected_initialization_hashes,
+            on_update=persist,
+        )
+        persist(new_rows)
+    else:
+        if sensitivity_cfg.get("synthetic_tensor_shape"):
+            checkpoint_hash = "synthetic"
+            metadata_path = output_dir / "cp_iteration_sensitivity_metadata.json"
+            if metadata_path.is_file():
+                previous_metadata = load_manifest(metadata_path)
+                diagnostic = previous_metadata.get("diagnostic")
+                reference_source = previous_metadata.get("spectral_reference_source", "saved sensitivity metadata")
+        else:
+            checkpoint_hash = sha256_file(dense_checkpoint_path(config, root))
+            reconstruction_metadata_path = output_dir / "reconstruction_metadata.json"
+            if reconstruction_metadata_path.is_file():
+                reconstruction_metadata = load_manifest(reconstruction_metadata_path)
+                if reconstruction_metadata.get("dense_checkpoint_sha256") != checkpoint_hash:
+                    raise RuntimeError("Dense checkpoint changed since canonical reconstruction")
+                diagnostic = reconstruction_metadata.get("diagnostic")
+                reference_source = str(reconstruction_metadata_path)
+
+    all_rows = [*persisted_rows.values(), *preserved_raw_rows]
+    compared_rows, comparison_diagnostics = apply_residual_reduction_comparisons(all_rows)
+    row_diagnostics.extend(comparison_diagnostics)
+    normalized_final, rejected_final, final_diagnostics = normalize_cp_iteration_rows(
+        compared_rows, context="final CP iteration-sensitivity persistence", warn=False
+    )
+    row_diagnostics.extend(final_diagnostics)
+    all_rows = [*normalized_final, *rejected_final]
+    write_csv(summary_path, all_rows)
+    aggregates, aggregate_diagnostics = aggregate_cp_iteration_rows(
+        all_rows, expected_seed_count=len(canonical_seeds)
+    )
+    row_diagnostics.extend(aggregate_diagnostics)
+    rank_summary_path = write_csv(
+        output_dir / "cp_iteration_sensitivity_rank_summary.csv", aggregates
+    )
+    rank_ordering = sensitivity_rank_ordering_changes(aggregates)
+
+    failures = [
+        {
+            "method": row.get("method"),
+            "rank": row.get("rank"),
+            "seed": row.get("seed"),
+            "iteration_budget": row.get("iteration_budget"),
+            "exception": row.get("failure_exception", ""),
+        }
+        for row in normalized_final
+        if row.get("status") == "failed"
+    ]
+    canonical_ten_iteration_reproduction = []
+    if not sensitivity_cfg.get("synthetic_tensor_shape"):
+        canonical_summary_path = output_dir / "reconstruction_summary.csv"
+        if canonical_summary_path.is_file():
+            canonical_rows, _, canonical_diagnostics = normalize_reconstruction_rows(
+                _read_reconstruction_rows(canonical_summary_path),
+                context="ten-iteration sensitivity reproduction check",
+                warn=False,
+            )
+            row_diagnostics.extend(canonical_diagnostics)
+            canonical_lookup = {
+                (int(row["rank"]), int(row["seed"])): row
+                for row in canonical_rows
+                if row.get("method") == "cp" and row.get("status") == "completed"
+            }
+            reproduction_tolerance = float(
+                recon_cfg.get("residual_reproduction_tolerance", tolerance)
+            )
+            for row in normalized_final:
+                if row.get("status") != "completed" or int(row["iteration_budget"]) != 10:
+                    continue
+                key = (int(row["rank"]), int(row["seed"]))
+                canonical = canonical_lookup.get(key)
+                if canonical is None:
+                    canonical_ten_iteration_reproduction.append(
+                        {
+                            "rank": key[0],
+                            "seed": key[1],
+                            "available": False,
+                            "within_tolerance": False,
+                            "reason": "matching completed canonical reconstruction row is missing",
+                        }
+                    )
+                    continue
+                difference = abs(
+                    float(row["actual_relative_squared_frobenius_error"])
+                    - float(canonical["actual_relative_squared_frobenius_error"])
+                )
+                canonical_ten_iteration_reproduction.append(
+                    {
+                        "rank": key[0],
+                        "seed": key[1],
+                        "available": True,
+                        "sensitivity_squared_residual": float(
+                            row["actual_relative_squared_frobenius_error"]
+                        ),
+                        "canonical_squared_residual": float(
+                            canonical["actual_relative_squared_frobenius_error"]
+                        ),
+                        "absolute_squared_residual_difference": difference,
+                        "tolerance": reproduction_tolerance,
+                        "within_tolerance": difference <= reproduction_tolerance,
+                    }
+                )
+    initialization_groups = {}
+    for row in normalized_final:
+        if row.get("status") != "completed":
+            continue
+        key = (int(row["rank"]), int(row["seed"]))
+        initialization_groups.setdefault(key, set()).add(row["initialization_hash_sha256"])
+    initialization_verification = [
+        {
+            "rank": rank,
+            "seed": seed,
+            "observed_hashes": sorted(hashes),
+            "identical_across_completed_budgets": len(hashes) == 1,
+        }
+        for (rank, seed), hashes in sorted(initialization_groups.items())
+    ]
+    inconsistent = [
+        item for item in initialization_verification if not item["identical_across_completed_budgets"]
+    ]
+    if inconsistent:
+        raise RuntimeError(f"Initialization identity verification failed: {inconsistent}")
+
+    figure_outputs = []
+    figure_generation_failures = []
+    try:
+        figure_outputs, figure_diagnostics = write_cp_iteration_sensitivity_figure(
+            all_rows, _paper_figures_dir(config, root)
+        )
+        row_diagnostics.extend(figure_diagnostics)
+    except Exception as exc:
+        figure_generation_failures.append(
+            {"figure": "cp_iteration_sensitivity", "exception": repr(exc), "nonfatal": True}
+        )
+
+    audit_path = resolve_path(
+        sensitivity_cfg.get(
+            "audit_path", "results/paper/cp_iteration_sensitivity_audit.md"
+        ),
+        root,
+    )
+    audit_outputs = []
+    audit_generation_failures = []
+    try:
+        written_audit, audit_complete = write_cp_iteration_sensitivity_audit(
+            aggregates,
+            audit_path,
+            canonical_ranks=canonical_ranks,
+            canonical_seeds=canonical_seeds,
+            canonical_iteration_budgets=canonical_budgets,
+            failures=failures,
+            rank_ordering=rank_ordering,
+            canonical_ten_iteration_reproduction=canonical_ten_iteration_reproduction,
+        )
+        audit_outputs.append(written_audit)
+    except Exception as exc:
+        audit_complete = False
+        audit_generation_failures.append(
+            {"artifact": "cp_iteration_sensitivity_audit", "exception": repr(exc), "nonfatal": True}
+        )
+    metadata_path = save_manifest(
+        output_dir / "cp_iteration_sensitivity_metadata.json",
+        {
+            "kind": "cp_iteration_budget_sensitivity",
+            "experiment_id": config.get("experiment_id"),
+            "canonical_ranks": canonical_ranks,
+            "canonical_cp_seeds": canonical_seeds,
+            "canonical_iteration_budgets": canonical_budgets,
+            "execution_ranks": ranks,
+            "execution_cp_seeds": seeds,
+            "execution_iteration_budgets": iteration_budgets,
+            "cp_initializer": init,
+            "independent_initialization_protocol": (
+                "For every rank/seed/budget, hash an independently constructed zero-iteration CP "
+                "initialization, then reset the same seed immediately before an independent fitted run. "
+                "No warm start is used."
+            ),
+            "initialization_verification": initialization_verification,
+            "initialization_diagnostics_from_execution": initialization_diagnostics,
+            "memory_efficient_mttkrp": memory_efficient_mttkrp,
+            "mttkrp_rank_chunk_size": mttkrp_rank_chunk_size,
+            "mttkrp_max_explicit_bytes": mttkrp_max_explicit_bytes,
+            "numerical_tolerance": tolerance,
+            "device_requested_and_used_for_cp_fitting": device.type,
+            "dense_checkpoint": (
+                "synthetic" if sensitivity_cfg.get("synthetic_tensor_shape") else str(dense_checkpoint_path(config, root))
+            ),
+            "dense_checkpoint_sha256": checkpoint_hash,
+            "target_layer": model_config(config).get("target_layer", "classifier.0"),
+            "spectral_reference_source": reference_source,
+            "diagnostic": diagnostic,
+            "rank_aggregates": aggregates,
+            "rank_ordering_diagnostic": rank_ordering,
+            "canonical_ten_iteration_reproduction": canonical_ten_iteration_reproduction,
+            "software_versions": _software_versions(),
+            "failures": failures,
+            "row_normalization_diagnostics": row_diagnostics,
+            "figure_outputs": figure_outputs,
+            "figure_generation_failures": figure_generation_failures,
+            "audit_outputs": audit_outputs,
+            "audit_complete": audit_complete,
+            "audit_generation_failures": audit_generation_failures,
+            "nonfatal_artifact_policy": (
+                "Every computation row is saved before aggregation, figure generation, or audit generation. "
+                "Figure and audit failures do not erase completed rows."
+            ),
+            "convergence_metadata_note": (
+                "Rows record completed requested budgets. Tensorly-torch 0.5 does not expose a certified "
+                "iteration history through FactorizedConv.from_conv, so no convergence claim is made."
+            ),
+            "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+            "summary_path": str(summary_path),
+            "rank_summary_path": str(rank_summary_path),
+        },
+        device=device,
+    )
+    if conv is not None:
+        del conv
+    gc.collect()
+    return metadata_path
 
 
 def _reconstruction_lookup(rows):

@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 from src.smallnet.config import load_config
 from src.smallnet.experiment import (
     run_cp_finetune,
+    run_cp_iteration_sensitivity,
     run_cp_zero_shot,
     run_dataset_validation,
     run_dense_evaluation,
@@ -39,6 +40,7 @@ STAGES = {
     "rank": [run_rank_diagnostics],
     "reconstruction": [run_reconstruction],
     "reconstruction-figures": [run_reconstruction_figures],
+    "cp-iteration-sensitivity": [run_cp_iteration_sensitivity],
     "structural-zero-shot": [run_structural_zero_shot],
     "full": [
         run_dense_evaluation,
@@ -65,6 +67,12 @@ def parse_args():
     )
     parser.add_argument("--ranks", nargs="+", type=int, help="Optional reconstruction/structural rank subset.")
     parser.add_argument("--seeds", nargs="+", type=int, help="Optional reconstruction/structural CP seed subset.")
+    parser.add_argument(
+        "--iteration-budgets",
+        nargs="+",
+        type=int,
+        help="Optional CP iteration-budget subset for the sensitivity stage.",
+    )
     return parser.parse_args()
 
 
@@ -73,26 +81,54 @@ def main():
     config = load_config(args.config)
     if args.output_dir:
         config["output_dir"] = args.output_dir
+    subset_section = (
+        "cp_iteration_sensitivity"
+        if args.stage == "cp-iteration-sensitivity"
+        else "reconstruction"
+    )
     if args.ranks:
-        config.setdefault("reconstruction", {})["execution_ranks"] = args.ranks
+        config.setdefault(subset_section, {})["execution_ranks"] = args.ranks
     if args.seeds:
-        config.setdefault("reconstruction", {})["execution_seeds"] = args.seeds
+        config.setdefault(subset_section, {})["execution_seeds"] = args.seeds
+    if args.iteration_budgets:
+        if args.stage != "cp-iteration-sensitivity":
+            raise ValueError("--iteration-budgets is supported only with --stage cp-iteration-sensitivity")
+        config.setdefault("cp_iteration_sensitivity", {})[
+            "execution_iteration_budgets"
+        ] = args.iteration_budgets
     if args.synthetic_smoke:
-        if args.stage != "reconstruction":
-            raise ValueError("--synthetic-smoke is supported only with --stage reconstruction")
-        if not args.output_dir:
-            config["output_dir"] = "results/camvid_vgg_cp/synthetic_reconstruction_smoke"
-        config.setdefault("paper", {})["figures_dir"] = (
-            f"{config['output_dir']}/figures"
-        )
-        config.setdefault("reconstruction", {}).update(
-            {
-                "synthetic_tensor_shape": [8, 6, 3, 3],
-                "synthetic_seed": 123,
-                "ranks": [1, 2, 4],
-                "seeds": [0, 1, 2],
-            }
-        )
+        if args.stage not in {"reconstruction", "cp-iteration-sensitivity"}:
+            raise ValueError(
+                "--synthetic-smoke is supported only with --stage reconstruction or "
+                "cp-iteration-sensitivity"
+            )
+        if args.stage == "reconstruction":
+            if not args.output_dir:
+                config["output_dir"] = "results/camvid_vgg_cp/synthetic_reconstruction_smoke"
+            config.setdefault("reconstruction", {}).update(
+                {
+                    "synthetic_tensor_shape": [8, 6, 3, 3],
+                    "synthetic_seed": 123,
+                    "ranks": [1, 2, 4],
+                    "seeds": [0, 1, 2],
+                }
+            )
+        else:
+            if not args.output_dir:
+                config["output_dir"] = (
+                    "results/camvid_vgg_cp/synthetic_cp_iteration_sensitivity_smoke"
+                )
+            config.setdefault("cp_iteration_sensitivity", {}).update(
+                {
+                    "synthetic_tensor_shape": [8, 6, 3, 3],
+                    "synthetic_seed": 123,
+                    "ranks": [1, 2, 4],
+                    "seeds": [0, 1, 2],
+                    "iteration_budgets": [1, 2, 3, 4],
+                    "audit_path": f"{config['output_dir']}/cp_iteration_sensitivity_audit.md",
+                }
+            )
+        config.setdefault("paper", {})["figures_dir"] = f"{config['output_dir']}/figures"
     device = auto_device(args.device or config.get("device"))
 
     outputs = []
