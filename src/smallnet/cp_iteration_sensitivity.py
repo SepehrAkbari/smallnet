@@ -33,7 +33,19 @@ from src.smallnet.structural import (
 
 
 SENSITIVITY_METHOD = "cp"
-DEFAULT_ITERATION_BUDGETS = (10, 25, 50, 100)
+DEFAULT_ITERATION_BUDGETS = (10, 25, 50, 100, 200, 400)
+
+
+def normalize_iteration_budget_grid(values):
+    budgets = [
+        _normalize_nonnegative_integer(value, "iteration_budget", positive=True)
+        for value in values
+    ]
+    if len(set(budgets)) != len(budgets):
+        raise ValueError("Iteration budgets must be unique")
+    if budgets != sorted(budgets):
+        raise ValueError("Iteration budgets must be strictly increasing")
+    return budgets
 
 
 def scientific_cp_iteration_key(row):
@@ -179,8 +191,8 @@ def fit_cp_approximation_with_initialization_capture(*args, **kwargs):
     return (*result, captured[0])
 
 
-def apply_residual_reduction_comparisons(rows):
-    '''Attach the four requested within-rank/seed residual comparisons.'''
+def apply_residual_reduction_comparisons(rows, iteration_budgets=None):
+    '''Attach generalized adjacent and smallest-to-largest seed-level comparisons.'''
     normalized, rejected, diagnostics = normalize_cp_iteration_rows(
         rows, context="iteration-sensitivity residual comparisons", warn=False
     )
@@ -190,25 +202,105 @@ def apply_residual_reduction_comparisons(rows):
             completed[(int(row["rank"]), int(row["seed"]))][int(row["iteration_budget"])] = float(
                 row["actual_relative_squared_frobenius_error"]
             )
-    names = {
-        (10, 25): "absolute_squared_residual_reduction_10_to_25",
-        (25, 50): "absolute_squared_residual_reduction_25_to_50",
-        (50, 100): "absolute_squared_residual_reduction_50_to_100",
-    }
+    if iteration_budgets is None:
+        iteration_budgets = sorted(
+            {budget for values in completed.values() for budget in values}
+        )
+    else:
+        iteration_budgets = normalize_iteration_budget_grid(iteration_budgets)
+    adjacent_pairs = list(zip(iteration_budgets, iteration_budgets[1:]))
     for row in normalized:
         values = completed.get((int(row["rank"]), int(row["seed"])), {})
-        for (start, stop), name in names.items():
-            row[name] = values[start] - values[stop] if start in values and stop in values else ""
+        adjacent = {}
+        for start, stop in adjacent_pairs:
+            absolute_name = f"absolute_squared_residual_reduction_{start}_to_{stop}"
+            relative_name = f"relative_squared_residual_reduction_{start}_to_{stop}"
+            if start in values and stop in values:
+                reduction = values[start] - values[stop]
+                relative = reduction / values[start] if values[start] else ""
+                row[absolute_name] = reduction
+                row[relative_name] = relative
+                adjacent[f"{start}_to_{stop}"] = {
+                    "absolute_squared_residual_reduction": reduction,
+                    "relative_squared_residual_reduction": relative,
+                }
+            else:
+                row[absolute_name] = ""
+                row[relative_name] = ""
+        row["adjacent_budget_residual_reductions_json"] = json.dumps(
+            adjacent, sort_keys=True
+        )
         if 10 in values and 100 in values:
             row["relative_squared_residual_reduction_10_to_100"] = (
                 (values[10] - values[100]) / values[10] if values[10] else ""
             )
         else:
             row["relative_squared_residual_reduction_10_to_100"] = ""
+        completed_grid = [budget for budget in iteration_budgets if budget in values]
+        if completed_grid:
+            smallest, largest = completed_grid[0], completed_grid[-1]
+            row["smallest_completed_iteration_budget"] = smallest
+            row["largest_completed_iteration_budget"] = largest
+            row["relative_squared_residual_reduction_smallest_to_largest_completed"] = (
+                (values[smallest] - values[largest]) / values[smallest]
+                if values[smallest]
+                else ""
+            )
     return [*normalized, *rejected], diagnostics
 
 
-def aggregate_cp_iteration_rows(rows, expected_seed_count=None):
+def cp_iteration_budget_transition_rows(
+    aggregates, iteration_budgets, expected_seed_count=None
+):
+    '''Return one completed aggregate transition per rank and adjacent budget pair.'''
+    budgets = normalize_iteration_budget_grid(iteration_budgets)
+    frame = pd.DataFrame(aggregates)
+    if frame.empty:
+        return []
+    transitions = []
+    for rank, group in frame.groupby("rank"):
+        by_budget = {
+            int(row["iteration_budget"]): row for row in group.to_dict("records")
+        }
+        for lower_budget, upper_budget in zip(budgets, budgets[1:]):
+            lower = by_budget.get(lower_budget)
+            upper = by_budget.get(upper_budget)
+            if lower is None or upper is None:
+                continue
+            if expected_seed_count is not None and (
+                int(lower["completed_seed_count"]) != int(expected_seed_count)
+                or int(upper["completed_seed_count"]) != int(expected_seed_count)
+            ):
+                continue
+            lower_mean = float(lower["actual_relative_squared_frobenius_error_mean"])
+            upper_mean = float(upper["actual_relative_squared_frobenius_error_mean"])
+            reduction = lower_mean - upper_mean
+            relative = reduction / lower_mean if lower_mean else float("nan")
+            lower_range = float(lower["actual_relative_squared_frobenius_error_seed_range"])
+            upper_range = float(upper["actual_relative_squared_frobenius_error_seed_range"])
+            transitions.append(
+                {
+                    "method": SENSITIVITY_METHOD,
+                    "rank": int(rank),
+                    "lower_budget": lower_budget,
+                    "upper_budget": upper_budget,
+                    "lower_mean_actual_relative_squared_frobenius_error": lower_mean,
+                    "upper_mean_actual_relative_squared_frobenius_error": upper_mean,
+                    "mean_absolute_squared_residual_reduction": reduction,
+                    "mean_relative_squared_residual_reduction": relative,
+                    "mean_absolute_change_below_1e_minus_3": abs(reduction) < 1e-3,
+                    "mean_relative_change_below_1_percent": abs(relative) < 0.01,
+                    "lower_actual_relative_squared_frobenius_error_seed_range": lower_range,
+                    "upper_actual_relative_squared_frobenius_error_seed_range": upper_range,
+                    "seed_range_change": upper_range - lower_range,
+                }
+            )
+    return transitions
+
+
+def aggregate_cp_iteration_rows(
+    rows, expected_seed_count=None, iteration_budgets=None
+):
     normalized, _, diagnostics = normalize_cp_iteration_rows(
         rows, context="CP iteration-sensitivity aggregation", warn=False
     )
@@ -244,7 +336,21 @@ def aggregate_cp_iteration_rows(rows, expected_seed_count=None):
         }
         output.append(record)
         by_rank[rank][budget] = record
+    grid = normalize_iteration_budget_grid(
+        iteration_budgets
+        if iteration_budgets is not None
+        else sorted({budget for budgets in by_rank.values() for budget in budgets})
+    )
     for rank, budgets in by_rank.items():
+        complete_budgets = [
+            budget
+            for budget in grid
+            if budget in budgets
+            and (
+                expected_seed_count is None
+                or int(budgets[budget]["completed_seed_count"]) == int(expected_seed_count)
+            )
+        ]
         if 50 in budgets and 100 in budgets:
             change = budgets[50]["actual_relative_squared_frobenius_error_mean"] - budgets[100][
                 "actual_relative_squared_frobenius_error_mean"
@@ -267,6 +373,72 @@ def aggregate_cp_iteration_rows(rows, expected_seed_count=None):
                 record["mean_relative_reduction_10_to_100_less_than_1_percent"] = abs(relative) < 0.01
                 record["seed_range_change_10_to_100"] = range_100 - range_10
                 record["seed_variability_trend_10_to_100"] = trend
+        if complete_budgets:
+            smallest, largest = complete_budgets[0], complete_budgets[-1]
+            smallest_mean = budgets[smallest]["actual_relative_squared_frobenius_error_mean"]
+            largest_mean = budgets[largest]["actual_relative_squared_frobenius_error_mean"]
+            total_relative = (
+                (smallest_mean - largest_mean) / smallest_mean if smallest_mean else float("nan")
+            )
+            gap_at_largest = budgets[largest]["gap_above_max_bound_mean"]
+            original_gap = (
+                budgets[10]["actual_relative_squared_frobenius_error_mean"]
+                - budgets[10]["output_mode_svd_residual_squared"]
+                if 10 in budgets
+                else None
+            )
+            fraction_gap_removed = (
+                (budgets[10]["actual_relative_squared_frobenius_error_mean"] - largest_mean)
+                / original_gap
+                if original_gap
+                else float("nan")
+            )
+            highest_pair = complete_budgets[-2:] if len(complete_budgets) >= 2 else []
+            for record in budgets.values():
+                record["smallest_complete_iteration_budget"] = smallest
+                record["largest_complete_iteration_budget"] = largest
+                record[
+                    "mean_relative_squared_residual_reduction_smallest_to_largest_complete_budget"
+                ] = total_relative
+                record["remaining_gap_above_max_bound_at_largest_complete_budget"] = gap_at_largest
+                record[
+                    "fraction_original_10_iteration_cp_svd_gap_removed_at_largest_complete_budget"
+                ] = fraction_gap_removed
+                if highest_pair:
+                    lower, upper = highest_pair
+                    lower_record, upper_record = budgets[lower], budgets[upper]
+                    reduction = (
+                        lower_record["actual_relative_squared_frobenius_error_mean"]
+                        - upper_record["actual_relative_squared_frobenius_error_mean"]
+                    )
+                    relative = (
+                        reduction / lower_record["actual_relative_squared_frobenius_error_mean"]
+                        if lower_record["actual_relative_squared_frobenius_error_mean"]
+                        else float("nan")
+                    )
+                    lower_range = lower_record[
+                        "actual_relative_squared_frobenius_error_seed_range"
+                    ]
+                    upper_range = upper_record[
+                        "actual_relative_squared_frobenius_error_seed_range"
+                    ]
+                    record["highest_two_complete_lower_budget"] = lower
+                    record["highest_two_complete_upper_budget"] = upper
+                    record[
+                        "mean_absolute_squared_residual_reduction_highest_two_complete_budgets"
+                    ] = reduction
+                    record[
+                        "mean_relative_squared_residual_reduction_highest_two_complete_budgets"
+                    ] = relative
+                    record[
+                        "highest_two_mean_absolute_change_below_1e_minus_3"
+                    ] = abs(reduction) < 1e-3
+                    record[
+                        "highest_two_mean_relative_change_below_1_percent"
+                    ] = abs(relative) < 0.01
+                    record["highest_two_lower_seed_range"] = lower_range
+                    record["highest_two_upper_seed_range"] = upper_range
+                    record["highest_two_seed_range_change"] = upper_range - lower_range
     return output, diagnostics
 
 
@@ -627,11 +799,16 @@ def write_cp_iteration_sensitivity_audit(
     failures,
     rank_ordering,
     canonical_ten_iteration_reproduction=None,
+    budget_transitions=None,
 ):
-    '''Write a restrained decision record; incomplete runs are labeled explicitly.'''
+    '''Write a restrained highest-two-budget decision record.'''
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     frame = pd.DataFrame(aggregates)
+    transitions = pd.DataFrame(budget_transitions or [])
+    canonical_iteration_budgets = normalize_iteration_budget_grid(
+        canonical_iteration_budgets
+    )
     expected = len(canonical_ranks) * len(canonical_iteration_budgets)
     reproduction = list(canonical_ten_iteration_reproduction or [])
     reproduction_passed = not reproduction or all(
@@ -644,9 +821,16 @@ def write_cp_iteration_sensitivity_audit(
         and not failures
         and reproduction_passed
     )
-    decision_ready = complete and set(DEFAULT_ITERATION_BUDGETS).issubset(
-        set(canonical_iteration_budgets)
+    final_lower, final_upper = canonical_iteration_budgets[-2:]
+    final_transitions = (
+        transitions[
+            (transitions["lower_budget"] == final_lower)
+            & (transitions["upper_budget"] == final_upper)
+        ]
+        if not transitions.empty
+        else pd.DataFrame()
     )
+    decision_ready = complete and len(final_transitions) == len(canonical_ranks)
     lines = [
         "# CP iteration-budget sensitivity audit",
         "",
@@ -669,25 +853,42 @@ def write_cp_iteration_sensitivity_audit(
                 f"{row['actual_relative_squared_frobenius_error_seed_range']:.9f} | "
                 f"{row['gap_above_max_bound_mean']:.9f} |"
             )
-    lines.extend(["", "## Required descriptive thresholds", ""])
-    if decision_ready:
-        for rank, group in frame.groupby("rank"):
-            row = group.iloc[0]
+    lines.extend(["", "## Adjacent-budget diagnostics", ""])
+    if not transitions.empty:
+        lines.extend(
+            [
+                "| Rank | Lower | Upper | Mean absolute reduction | Mean relative reduction | Absolute <1e-3 | Relative <1% | Seed-range change |",
+                "|---:|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for row in transitions.sort_values(["rank", "lower_budget"]).to_dict("records"):
             lines.append(
-                f"- Rank {int(rank)}: mean 50-to-100 reduction "
-                f"`{row['mean_absolute_squared_residual_reduction_50_to_100']:.9f}`; "
-                f"less than `1e-3`: `{bool(row['mean_change_50_to_100_less_than_1e_minus_3'])}`. "
-                f"Mean relative 10-to-100 reduction "
-                f"`{100 * row['mean_relative_squared_residual_reduction_10_to_100']:.4f}%`; "
-                f"less than 1%: `{bool(row['mean_relative_reduction_10_to_100_less_than_1_percent'])}`. "
-                f"Seed variability `{row['seed_variability_trend_10_to_100']}`."
+                f"| {int(row['rank'])} | {int(row['lower_budget'])} | {int(row['upper_budget'])} | "
+                f"{row['mean_absolute_squared_residual_reduction']:.9f} | "
+                f"{100 * row['mean_relative_squared_residual_reduction']:.4f}% | "
+                f"{bool(row['mean_absolute_change_below_1e_minus_3'])} | "
+                f"{bool(row['mean_relative_change_below_1_percent'])} | "
+                f"{row['seed_range_change']:.9f} |"
+            )
+    else:
+        lines.append("No adjacent pair has complete seed coverage yet.")
+    lines.extend(["", "## Highest-two-budget stopping diagnostics", ""])
+    if decision_ready:
+        for row in final_transitions.sort_values("rank").to_dict("records"):
+            lines.append(
+                f"- Rank {int(row['rank'])}, {final_lower} to {final_upper}: mean absolute reduction "
+                f"`{row['mean_absolute_squared_residual_reduction']:.9f}`; relative reduction "
+                f"`{100 * row['mean_relative_squared_residual_reduction']:.4f}%`; absolute below "
+                f"`1e-3`=`{bool(row['mean_absolute_change_below_1e_minus_3'])}`; relative below "
+                f"1%=`{bool(row['mean_relative_change_below_1_percent'])}`; seed-range change "
+                f"`{row['seed_range_change']:.9f}`."
             )
         lines.append(
             f"- Rank ordering changed across complete budgets: `{rank_ordering.get('rank_order_changed')}`."
         )
     else:
         lines.append(
-            "- Threshold decisions are deferred until the complete 10/25/50/100 canonical grid is available."
+            f"- Final decisions are deferred until all ranks and seeds complete both {final_lower} and {final_upper} iterations."
         )
     if reproduction:
         lines.extend(["", "## Canonical ten-iteration reproduction", ""])
@@ -711,94 +912,83 @@ def write_cp_iteration_sensitivity_audit(
         ]
     )
     if decision_ready:
-        plateau = bool(frame.groupby("rank").first()["mean_change_50_to_100_less_than_1e_minus_3"].all())
-        under_one_percent = bool(
-            frame.groupby("rank").first()[
-                "mean_relative_reduction_10_to_100_less_than_1_percent"
-            ].all()
+        absolute_stable = bool(
+            final_transitions["mean_absolute_change_below_1e_minus_3"].all()
         )
-        gap_100 = frame[frame["iteration_budget"] == 100].set_index("rank")[
+        relative_stable = bool(
+            final_transitions["mean_relative_change_below_1_percent"].all()
+        )
+        descriptive_plateau = absolute_stable and relative_stable
+        final_800_needed = bool(
+            (
+                final_transitions["mean_absolute_squared_residual_reduction"].abs()
+                >= 1e-3
+            ).any()
+        )
+        gap_final = frame[frame["iteration_budget"] == final_upper].set_index("rank")[
             "gap_above_max_bound_mean"
         ]
-        per_rank = frame.groupby("rank").first()
-        stable_by_rank = (
-            per_rank["mean_change_50_to_100_less_than_1e_minus_3"]
-            & per_rank["mean_relative_reduction_10_to_100_less_than_1_percent"]
-        )
-        ranks_requiring_more_than_ten = [
-            int(rank) for rank, stable in stable_by_rank.items() if not bool(stable)
+        final_records = frame.groupby("rank").first()
+        fraction_removed = final_records[
+            "fraction_original_10_iteration_cp_svd_gap_removed_at_largest_complete_budget"
         ]
-        ordered_gap_100 = gap_100.sort_index()
-        widening_at_100 = bool(np.all(np.diff(ordered_gap_100.to_numpy()) > 0))
-        gap_closure = {}
-        for rank, group in frame.groupby("rank"):
-            by_budget = group.set_index("iteration_budget")
-            gap_10 = float(by_budget.loc[10, "gap_above_max_bound_mean"])
-            reduction = float(
-                by_budget.loc[10, "actual_relative_squared_frobenius_error_mean"]
-                - by_budget.loc[100, "actual_relative_squared_frobenius_error_mean"]
-            )
-            gap_closure[int(rank)] = reduction / gap_10 if gap_10 else float("nan")
-        if not plateau:
-            later_budget = (
-                "No final common budget is justified yet; extend only ranks whose 50-to-100 change "
-                "is at least 1e-3, then select a common stabilized budget."
-            )
-        elif ranks_requiring_more_than_ten:
-            later_budget = (
-                "Use the larger common 100-iteration budget. Do not use rank-specific budgets, "
-                "because they would confound rank comparisons."
-            )
-        else:
-            later_budget = (
-                "Retain the common ten-iteration budget; all ranks satisfy both requested "
-                "descriptive stabilization thresholds."
-            )
-        gap_reduction_answer = (
-            "No under the requested less-than-1% relative residual-change diagnostic."
-            if under_one_percent
-            else "At least one rank changes by 1% or more, so budget sensitivity is materially present under the requested diagnostic."
+        fraction_remaining = 1.0 - fraction_removed
+        gap_remains_large_descriptively = bool((fraction_remaining >= 0.5).all())
+        widening_at_final = bool(np.all(np.diff(gap_final.sort_index().to_numpy()) > 0))
+        transition_lookup = {
+            (int(row["rank"]), int(row["lower_budget"]), int(row["upper_budget"])): row
+            for row in transitions.to_dict("records")
+        }
+        stable_100_to_200 = all(
+            (item := transition_lookup.get((int(rank), 100, 200))) is not None
+            and bool(item["mean_absolute_change_below_1e_minus_3"])
+            and bool(item["mean_relative_change_below_1_percent"])
+            for rank in canonical_ranks
         )
+        if stable_100_to_200 and descriptive_plateau:
+            later_budget = 100
+        elif descriptive_plateau:
+            later_budget = 200
+        else:
+            later_budget = 400
         lines.extend(
             [
-                f"1. **Is ten iterations near a residual plateau?** `{plateau and under_one_percent}` "
-                "under the two requested descriptive checks: all-rank 50-to-100 change below 1e-3="
-                f"`{plateau}` and all-rank absolute relative 10-to-100 change below 1%=`{under_one_percent}`. "
-                "This is residual stabilization, not certified convergence.",
-                f"2. **Does a larger budget substantially reduce the CP--SVD gap?** {gap_reduction_answer} "
-                "The fractions of the "
-                "ten-iteration gap removed by 100 iterations are "
+                f"1. **Is {final_upper} iterations near a descriptive residual plateau?** `{descriptive_plateau}`: "
+                f"all {final_lower}-to-{final_upper} absolute changes below `1e-3`=`{absolute_stable}` and all "
+                f"relative changes below 1%=`{relative_stable}`. This is residual stabilization, not convergence.",
+                f"2. **Is {final_lower} a sufficiently stable common budget?** `{descriptive_plateau}` under the "
+                f"requested {final_lower}-to-{final_upper} checks.",
+                f"3. **Is {final_upper} necessary?** `{not descriptive_plateau}` under those checks; if false, "
+                f"{final_lower} already provides the stable common endpoint.",
+                f"4. **Does the CP--SVD gap remain large at {final_upper}?** "
+                f"`{gap_remains_large_descriptively}` under the transparent descriptive reading that at "
+                "least half of the original ten-iteration gap remains at every rank. The remaining gaps are "
+                + ", ".join(f"rank {int(rank)}: `{value:.6f}`" for rank, value in gap_final.items())
+                + "; the fractions of the original ten-iteration gap remaining are "
                 + ", ".join(
-                    f"rank {rank}: `{100 * value:.4f}%`" for rank, value in gap_closure.items()
+                    f"rank {int(rank)}: `{100 * value:.2f}%`"
+                    for rank, value in fraction_remaining.items()
                 )
-                + ". These descriptive fractions, rather than a preset conclusion, determine whether the "
-                "gap reduction is material.",
-                "3. **Is the widening high-rank gap present at 100 iterations?** The 100-iteration mean gaps are "
-                + ", ".join(f"rank {int(rank)}: `{value:.6f}`" for rank, value in gap_100.items())
-                + f". The gap increases monotonically with rank=`{widening_at_100}`; rank ordering changed="
-                f"`{rank_ordering.get('rank_order_changed')}`.",
-                "4. **Does any rank require a larger canonical budget?** Ranks failing at least one requested "
-                f"stabilization check: `{ranks_requiring_more_than_ten}`. This is a protocol decision, not a "
-                "convergence certificate.",
-                f"5. **Budget for later experiments:** {later_budget}",
-                "6. **Would a budget change require rerunning canonical zero-shot results?** Yes. Any CP factors "
-                "used for zero-shot evaluation must be refitted at the selected budget and the corresponding zero-shot "
-                "rows regenerated. The existing ten-iteration artifacts must remain as a separately labeled protocol.",
-                "7. **Is another budget experiment necessary?** No further budget grid is required if the 50-to-100 "
-                "changes are descriptively negligible for all ranks; otherwise extend only the affected ranks with "
-                "the same initialization protocol.",
+                + ". These magnitudes quantify the remaining gap without imposing an additional universal cutoff.",
+                f"5. **Has rank ordering changed?** `{rank_ordering.get('rank_order_changed')}`. The "
+                f"gap still widens monotonically with rank at {final_upper}=`{widening_at_final}`.",
+                f"6. **Should later CP decompositions use 100, 200, or 400 iterations?** Use the common "
+                f"budget `{later_budget}` under the requested adjacent-pair checks; do not use rank-specific budgets.",
+                f"7. **Is one final 800-iteration check needed?** `{final_800_needed}`. It is recommended only "
+                f"because at least one rank has mean absolute {final_lower}-to-{final_upper} reduction "
+                f"greater than or equal to `1e-3`=`{final_800_needed}`.",
             ]
         )
     else:
         lines.extend(
             [
-                "1. Ten-iteration plateau decision: deferred.",
-                "2. CP--SVD gap-reduction decision: deferred.",
-                "3. High-rank 100-iteration gap decision: deferred.",
-                "4. Canonical-budget decision: deferred.",
-                "5. Later-experiment budget decision: deferred.",
-                "6. If the selected fitting budget changes, canonical zero-shot CP results must be rerun and separately labeled.",
-                "7. Further iteration-budget work cannot be assessed until the requested grid completes.",
+                f"1. {final_upper}-iteration plateau decision: deferred.",
+                f"2. {final_lower}-iteration stability decision: deferred.",
+                f"3. {final_upper}-iteration necessity decision: deferred.",
+                f"4. {final_upper}-iteration CP--SVD gap decision: deferred.",
+                "5. Rank-order decision: provisional until the full grid completes.",
+                "6. Later common-budget decision: deferred.",
+                f"7. An 800-iteration recommendation is deferred until every rank completes {final_lower} and {final_upper}.",
             ]
         )
     if failures:

@@ -142,7 +142,7 @@ Repeat with ranks 64, 128, 256, and 512. Preserve the same output directory betw
 
 ## CP iteration-budget sensitivity
 
-The dedicated sensitivity stage is isolated from `reconstruction_summary.csv` and all zero-shot artifacts. Its primary protocol independently fits ranks 128, 256, and 512 with seeds 0, 1, and 2 at requested budgets 10, 25, 50, and 100. Before every fit it constructs the zero-iteration CP factors, hashes the component weights and factor matrices, verifies that the hash agrees across budgets for the same rank and seed, and then resets the seed immediately before the independent budgeted fit. It does not warm-start from a shorter run.
+The dedicated sensitivity stage is isolated from `reconstruction_summary.csv` and all zero-shot artifacts. Its primary protocol independently fits ranks 128, 256, and 512 with seeds 0, 1, and 2 at requested budgets 10, 25, 50, 100, 200, and 400. Before every fit it constructs the zero-iteration CP factors, hashes the component weights and factor matrices, verifies that the hash agrees across budgets for the same rank and seed, and then resets the seed immediately before the independent budgeted fit. It does not warm-start from a shorter run.
 
 Run a dataset- and checkpoint-free smoke experiment locally:
 
@@ -163,7 +163,7 @@ uv run python scripts/run_experiment.py \
   --device cuda \
   --ranks 128 \
   --seeds 0 1 2 \
-  --iteration-budgets 10 25 50 100
+  --iteration-budgets 200 400
 ```
 
 Repeat with ranks 256 and 512. Every completed rank/seed/budget row is written immediately. Rerunning the same command skips completed keys, retries missing or failed keys, recalculates comparisons and aggregates, and regenerates the partial or complete figure. A figure or audit-generation exception is recorded without deleting successful computation rows.
@@ -172,6 +172,7 @@ Sensitivity outputs are distinct from the canonical ten-iteration table:
 
 - `results/camvid_vgg_cp/cp_iteration_sensitivity_summary.csv`
 - `results/camvid_vgg_cp/cp_iteration_sensitivity_rank_summary.csv`
+- `results/camvid_vgg_cp/cp_iteration_sensitivity_budget_transitions.csv`
 - `results/camvid_vgg_cp/cp_iteration_sensitivity_metadata.json`
 - `results/camvid_vgg_cp/cp_iteration_sensitivity_config_used.json`
 - `results/paper/figures/cp_iteration_sensitivity.csv`
@@ -179,7 +180,7 @@ Sensitivity outputs are distinct from the canonical ten-iteration table:
 - `results/paper/figures/cp_iteration_sensitivity.png`
 - `results/paper/cp_iteration_sensitivity_audit.md`
 
-The rank summary reports population standard deviation, minimum, maximum, seed range, residual changes, remaining lower-bound gap, the specified descriptive thresholds, rank ordering, and seed-variability direction. Completion means the requested budget ran; it does not certify optimization convergence.
+The transition table reports every adjacent pair in the configured increasing grid. The stopping decision always uses the highest two complete canonical budgets; for the current grid these are 200 and 400. An 800-iteration check is recommended only when at least one rank has an absolute mean squared-residual reduction of at least `1e-3` from 200 to 400. Completion means the requested budget ran; it does not certify optimization convergence.
 
 ## Outputs
 

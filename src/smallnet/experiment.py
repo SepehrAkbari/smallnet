@@ -56,8 +56,10 @@ from src.smallnet.structural import (
 from src.smallnet.cp_iteration_sensitivity import (
     aggregate_cp_iteration_rows,
     apply_residual_reduction_comparisons,
+    cp_iteration_budget_transition_rows,
     cp_iteration_rows_for_conv,
     normalize_cp_iteration_rows,
+    normalize_iteration_budget_grid,
     reference_diagnostic_for_conv,
     scientific_cp_iteration_key,
     sensitivity_rank_ordering_changes,
@@ -1103,23 +1105,18 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
     recon_cfg = reconstruction_config(config)
     canonical_ranks = [int(value) for value in sensitivity_cfg.get("ranks", [128, 256, 512])]
     canonical_seeds = [int(value) for value in sensitivity_cfg.get("seeds", [0, 1, 2])]
-    canonical_budgets = [
-        int(value) for value in sensitivity_cfg.get("iteration_budgets", [10, 25, 50, 100])
-    ]
+    canonical_budgets = normalize_iteration_budget_grid(
+        sensitivity_cfg.get("iteration_budgets", [10, 25, 50, 100, 200, 400])
+    )
     ranks = [int(value) for value in sensitivity_cfg.get("execution_ranks", canonical_ranks)]
     seeds = [int(value) for value in sensitivity_cfg.get("execution_seeds", canonical_seeds)]
-    iteration_budgets = [
-        int(value)
-        for value in sensitivity_cfg.get("execution_iteration_budgets", canonical_budgets)
-    ]
+    iteration_budgets = normalize_iteration_budget_grid(
+        sensitivity_cfg.get("execution_iteration_budgets", canonical_budgets)
+    )
     if len(set(ranks)) != len(ranks) or any(value <= 0 for value in ranks):
         raise ValueError("Sensitivity ranks must be unique positive integers")
     if len(set(seeds)) != len(seeds) or any(value < 0 for value in seeds):
         raise ValueError("Sensitivity seeds must be unique nonnegative integers")
-    if len(set(iteration_budgets)) != len(iteration_budgets) or any(
-        value <= 0 for value in iteration_budgets
-    ):
-        raise ValueError("Iteration budgets must be unique positive integers")
     init = sensitivity_cfg.get("init", recon_cfg.get("init", cp_config(config).get("init", "random")))
     tolerance = float(
         sensitivity_cfg.get("numerical_tolerance", recon_cfg.get("numerical_tolerance", 1e-5))
@@ -1185,7 +1182,8 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
                 continue
             persisted_rows[key] = row
         compared_rows, comparison_diagnostics = apply_residual_reduction_comparisons(
-            [*persisted_rows.values(), *preserved_raw_rows]
+            [*persisted_rows.values(), *preserved_raw_rows],
+            iteration_budgets=canonical_budgets,
         )
         row_diagnostics.extend(comparison_diagnostics)
         normalized_compared, rejected_compared, _ = normalize_cp_iteration_rows(
@@ -1259,7 +1257,9 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
                 reference_source = str(reconstruction_metadata_path)
 
     all_rows = [*persisted_rows.values(), *preserved_raw_rows]
-    compared_rows, comparison_diagnostics = apply_residual_reduction_comparisons(all_rows)
+    compared_rows, comparison_diagnostics = apply_residual_reduction_comparisons(
+        all_rows, iteration_budgets=canonical_budgets
+    )
     row_diagnostics.extend(comparison_diagnostics)
     normalized_final, rejected_final, final_diagnostics = normalize_cp_iteration_rows(
         compared_rows, context="final CP iteration-sensitivity persistence", warn=False
@@ -1268,11 +1268,22 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
     all_rows = [*normalized_final, *rejected_final]
     write_csv(summary_path, all_rows)
     aggregates, aggregate_diagnostics = aggregate_cp_iteration_rows(
-        all_rows, expected_seed_count=len(canonical_seeds)
+        all_rows,
+        expected_seed_count=len(canonical_seeds),
+        iteration_budgets=canonical_budgets,
     )
     row_diagnostics.extend(aggregate_diagnostics)
     rank_summary_path = write_csv(
         output_dir / "cp_iteration_sensitivity_rank_summary.csv", aggregates
+    )
+    budget_transitions = cp_iteration_budget_transition_rows(
+        aggregates,
+        canonical_budgets,
+        expected_seed_count=len(canonical_seeds),
+    )
+    budget_transitions_path = write_csv(
+        output_dir / "cp_iteration_sensitivity_budget_transitions.csv",
+        budget_transitions,
     )
     rank_ordering = sensitivity_rank_ordering_changes(aggregates)
 
@@ -1392,6 +1403,7 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
             failures=failures,
             rank_ordering=rank_ordering,
             canonical_ten_iteration_reproduction=canonical_ten_iteration_reproduction,
+            budget_transitions=budget_transitions,
         )
         audit_outputs.append(written_audit)
     except Exception as exc:
@@ -1431,6 +1443,7 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
             "spectral_reference_source": reference_source,
             "diagnostic": diagnostic,
             "rank_aggregates": aggregates,
+            "budget_transitions": budget_transitions,
             "rank_ordering_diagnostic": rank_ordering,
             "canonical_ten_iteration_reproduction": canonical_ten_iteration_reproduction,
             "software_versions": _software_versions(),
@@ -1452,6 +1465,7 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
             "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
             "summary_path": str(summary_path),
             "rank_summary_path": str(rank_summary_path),
+            "budget_transitions_path": str(budget_transitions_path),
         },
         device=device,
     )
