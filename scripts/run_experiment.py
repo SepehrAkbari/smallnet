@@ -21,9 +21,11 @@ from src.smallnet.experiment import (
     run_dataset_validation,
     run_dense_evaluation,
     run_existing_finetuned_evaluation,
+    run_final_structural,
     run_profiling,
     run_rank_diagnostics,
     run_rank512_stability,
+    run_rank512_repeatability_decision,
     run_reconstruction,
     run_reconstruction_figures,
     run_structural_zero_shot,
@@ -43,6 +45,8 @@ STAGES = {
     "reconstruction-figures": [run_reconstruction_figures],
     "cp-iteration-sensitivity": [run_cp_iteration_sensitivity],
     "rank512-stability": [run_rank512_stability],
+    "rank512-repeatability-decision": [run_rank512_repeatability_decision],
+    "final-structural": [run_final_structural],
     "structural-zero-shot": [run_structural_zero_shot],
     "full": [
         run_dense_evaluation,
@@ -98,6 +102,7 @@ def main():
     subset_section = {
         "cp-iteration-sensitivity": "cp_iteration_sensitivity",
         "rank512-stability": "rank512_stability",
+        "final-structural": "final_structural",
     }.get(args.stage, "reconstruction")
     if args.ranks:
         if args.stage == "rank512-stability" and args.ranks != [512]:
@@ -131,10 +136,11 @@ def main():
             "reconstruction",
             "cp-iteration-sensitivity",
             "rank512-stability",
+            "final-structural",
         }:
             raise ValueError(
                 "--synthetic-smoke is supported only with --stage reconstruction or "
-                "cp-iteration-sensitivity, or rank512-stability"
+                "cp-iteration-sensitivity, rank512-stability, or final-structural"
             )
         if args.stage == "reconstruction":
             if not args.output_dir:
@@ -162,7 +168,7 @@ def main():
                     "audit_path": f"{config['output_dir']}/cp_iteration_sensitivity_audit.md",
                 }
             )
-        else:
+        elif args.stage == "rank512-stability":
             if not args.output_dir:
                 config["output_dir"] = "results/camvid_vgg_cp/synthetic_rank512_stability_smoke"
             config.setdefault("rank512_stability", {}).update(
@@ -181,6 +187,24 @@ def main():
                     "output_dir": config["output_dir"],
                     "figures_dir": f"{config['output_dir']}/figures",
                     "audit_path": f"{config['output_dir']}/rank512_stability_audit.md",
+                }
+            )
+        else:
+            if not args.output_dir:
+                config["output_dir"] = (
+                    "results/camvid_vgg_cp/synthetic_final_structural_smoke"
+                )
+            config.setdefault("final_structural", {}).update(
+                {
+                    "synthetic_tensor_shape": [8, 6, 3, 3],
+                    "synthetic_seed": 123,
+                    "synthetic_num_classes": 3,
+                    "ranks": [1, 2],
+                    "seeds": [0, 1],
+                    "iteration_budget": 200,
+                    "output_dir": config["output_dir"],
+                    "figures_dir": f"{config['output_dir']}/figures",
+                    "audit_path": f"{config['output_dir']}/final_structural_audit.md",
                 }
             )
         config.setdefault("paper", {})["figures_dir"] = f"{config['output_dir']}/figures"

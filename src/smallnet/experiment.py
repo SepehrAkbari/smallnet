@@ -13,6 +13,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 
 from src.smallnet.config import ensure_dir
 from src.smallnet.data import (
@@ -40,6 +41,7 @@ from src.smallnet.structural import (
     aggregate_cp_reconstruction_rows,
     cp_conv_parameter_count,
     dense_conv_parameter_count,
+    diagnostic_bounds,
     exploratory_correlations,
     fit_cp_approximation,
     join_structural_tradeoffs,
@@ -59,6 +61,8 @@ from src.smallnet.cp_iteration_sensitivity import (
     apply_residual_reduction_comparisons,
     cp_iteration_budget_transition_rows,
     cp_iteration_rows_for_conv,
+    cp_initialization_hash,
+    fit_cp_approximation_with_initialization_capture,
     normalize_cp_iteration_rows,
     normalize_iteration_budget_grid,
     reference_diagnostic_for_conv,
@@ -73,12 +77,31 @@ from src.smallnet.rank512_stability import (
     STABILITY_METHOD,
     aggregate_rank512_stability_rows,
     captured_shared_initialization,
+    factor_scaling_diagnostics,
+    finalize_degeneracy_indicators,
     fit_rank512_stability_row,
     normalize_rank512_stability_rows,
     scientific_rank512_stability_key,
     tensor_sha256,
+    verify_cp_reconstruction,
     write_rank512_stability_audit,
     write_rank512_stability_figure,
+    write_rank512_repeatability_decision,
+)
+from src.smallnet.final_structural import (
+    FINAL_CP_METHOD,
+    FINAL_ITERATION_BUDGET,
+    FINAL_SVD_METHOD,
+    aggregate_final_structural_rows,
+    final_structural_key,
+    fitted_factor_hash,
+    load_factor_artifact,
+    measure_layer_activation_distortion,
+    normalize_final_structural_rows,
+    save_factor_artifact,
+    verify_completed_row_schema,
+    write_final_structural_audit,
+    write_final_structural_figures,
 )
 
 
@@ -135,6 +158,10 @@ def cp_iteration_sensitivity_config(config):
 
 def rank512_stability_config(config):
     return config.get("rank512_stability", {})
+
+
+def final_structural_config(config):
+    return config.get("final_structural", {})
 
 
 def existing_finetuned_config(config):
@@ -2047,6 +2074,814 @@ def run_rank512_stability(config, root, device, max_batches=None):
         },
         device=device,
     )
+    return metadata_path
+
+
+def run_rank512_repeatability_decision(config, root, device=None, max_batches=None):
+    '''Generate the accepted lean rank-512 protocol decision without fitting CP.'''
+    output_dir = resolve_path(
+        rank512_stability_config(config).get(
+            "output_dir", "results/camvid_vgg_cp/rank512_stability"
+        ),
+        root,
+    )
+    summary_path = output_dir / "rank512_stability_summary.csv"
+    if not summary_path.is_file():
+        raise FileNotFoundError(summary_path)
+    with open(summary_path, newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    result = write_rank512_repeatability_decision(
+        rows,
+        audit_path=resolve_path(
+            "results/paper/rank512_repeatability_decision.md", root
+        ),
+        figures_dir=resolve_path("results/paper/figures", root),
+        tolerance=float(
+            rank512_stability_config(config).get("numerical_tolerance", 1e-5)
+        ),
+    )
+    return Path(result["audit_path"])
+
+
+class _SyntheticStructuralModel(nn.Module):
+    def __init__(self, target_shape, num_classes=3):
+        super().__init__()
+        cout, cin, kh, kw = map(int, target_shape)
+        self.pre = nn.Conv2d(3, cin, kernel_size=1)
+        self.target = nn.Conv2d(
+            cin, cout, kernel_size=(kh, kw), padding=(kh // 2, kw // 2)
+        )
+        self.post = nn.Conv2d(cout, num_classes, kernel_size=1)
+
+    def forward(self, inputs):
+        return self.post(torch.relu(self.target(torch.relu(self.pre(inputs)))))
+
+
+def _synthetic_structural_context(final_cfg):
+    shape = tuple(
+        map(int, final_cfg.get("synthetic_tensor_shape", [8, 6, 3, 3]))
+    )
+    num_classes = int(final_cfg.get("synthetic_num_classes", 3))
+    synthetic_seed = int(final_cfg.get("synthetic_seed", 123))
+    set_seed(synthetic_seed, deterministic=True)
+    template = _SyntheticStructuralModel(shape, num_classes=num_classes)
+    template_state = deepcopy(template.state_dict())
+
+    def load_model():
+        model = _SyntheticStructuralModel(shape, num_classes=num_classes)
+        model.load_state_dict(template_state)
+        return model
+
+    generator = torch.Generator().manual_seed(synthetic_seed + 1)
+    images = torch.randn(7, 3, 8, 9, generator=generator)
+    with torch.no_grad():
+        masks = load_model()(images).argmax(dim=1)
+    validation_loader = DataLoader(
+        TensorDataset(images[:5], masks[:5]), batch_size=2, shuffle=False
+    )
+    test_loader = DataLoader(
+        TensorDataset(images[5:], masks[5:]), batch_size=2, shuffle=False
+    )
+    return {
+        "load_model": load_model,
+        "target_layer": "target",
+        "validation_loader": validation_loader,
+        "test_loader": test_loader,
+        "num_classes": num_classes,
+        "ignore_index": None,
+        "class_names": [f"class_{index}" for index in range(num_classes)],
+        "checkpoint_path": None,
+        "checkpoint_hash": "synthetic",
+        "dataset_validation_path": None,
+        "dataset_validation_hash": "synthetic",
+        "input_size": (1, 3, 8, 9),
+        "model_kind": "synthetic",
+    }
+
+
+def _canonical_structural_context(config, root):
+    validation_path = experiment_output_dir(config, root) / "dataset_validation_report.json"
+    if not validation_path.is_file():
+        raise FileNotFoundError(
+            f"Canonical dataset validation report is missing: {validation_path}"
+        )
+    validation_payload = load_manifest(validation_path)
+    if validation_payload.get("status") != "pass":
+        raise RuntimeError("Canonical dataset validation report does not pass")
+    expected_unknown = (
+        dataset_config(config)
+        .get("unknown_color_resolution", {})
+        .get("affected_pixel_count")
+    )
+    if expected_unknown is not None and int(
+        validation_payload.get("unknown_pixels_mapped_to_ignore", -1)
+    ) != int(expected_unknown):
+        raise RuntimeError("Dataset validation report does not match approved unknown pixels")
+    checkpoint_path = dense_checkpoint_path(config, root)
+    names = load_camvid_class_names(class_dict_path(config, root))
+    h, w = image_size(config)
+    return {
+        "load_model": lambda: load_dense_model(config, root),
+        "target_layer": model_config(config).get("target_layer", "classifier.0"),
+        "validation_loader": loader_for_split(config, root, "val", shuffle=False),
+        "test_loader": loader_for_split(config, root, "test", shuffle=False),
+        "num_classes": int(dataset_config(config).get("num_classes", len(names))),
+        "ignore_index": dataset_config(config).get("ignore_index"),
+        "class_names": names,
+        "checkpoint_path": checkpoint_path,
+        "checkpoint_hash": sha256_file(checkpoint_path),
+        "dataset_validation_path": validation_path,
+        "dataset_validation_hash": sha256_file(validation_path),
+        "input_size": tuple(
+            profile_config(config).get("input_size", [1, 3, h, w])
+        ),
+        "model_kind": "camvid_vgg16_fcn32s",
+    }
+
+
+def _evaluate_structural_splits(model, context, device, max_batches=None):
+    output = {}
+    for split, loader in (
+        ("validation", context["validation_loader"]),
+        ("test", context["test_loader"]),
+    ):
+        _, summary = evaluate_segmentation(
+            model,
+            loader,
+            context["num_classes"],
+            device,
+            ignore_index=context["ignore_index"],
+            class_names=context["class_names"],
+            max_batches=max_batches,
+        )
+        output.update(
+            {
+                f"{split}_present_class_miou": summary[
+                    "mean_iou_present_classes"
+                ],
+                f"{split}_all_class_miou": summary["mean_iou_all_classes"],
+                f"{split}_pixel_accuracy": summary["pixel_accuracy"],
+                f"{split}_frequency_weighted_iou": summary[
+                    "frequency_weighted_iou"
+                ],
+            }
+        )
+    return output
+
+
+def _model_costs(model, target_layer, input_size, device):
+    model = model.to(device)
+    full_macs, records = manual_macs(model, input_size, device=device)
+    target_records = [
+        row
+        for row in records
+        if row["name"] == target_layer or row["name"].startswith(f"{target_layer}.")
+    ]
+    if not target_records:
+        raise RuntimeError(f"No MAC records found for target layer {target_layer}")
+    return {
+        "full_model_parameter_count": count_parameters(model),
+        "target_layer_parameter_count": count_parameters(
+            get_module(model, target_layer)
+        ),
+        "full_model_macs": int(full_macs),
+        "target_layer_macs": int(sum(row["macs"] for row in target_records)),
+    }
+
+
+def _factor_artifact_path(factors_dir, rank, seed):
+    return Path(factors_dir) / f"cp_rank_{int(rank)}_seed_{int(seed)}_iter_200.pt"
+
+
+def run_final_structural(config, root, device, max_batches=None):
+    '''Run the isolated final 200-iteration structural evaluation.'''
+    final_cfg = final_structural_config(config)
+    synthetic = bool(final_cfg.get("synthetic_tensor_shape"))
+    if not synthetic and torch.device(device).type != "cuda":
+        raise RuntimeError("The canonical final-structural stage requires CUDA")
+    iteration_budget = int(
+        final_cfg.get("iteration_budget", FINAL_ITERATION_BUDGET)
+    )
+    if iteration_budget != FINAL_ITERATION_BUDGET:
+        raise ValueError(
+            f"final-structural requires exactly {FINAL_ITERATION_BUDGET} CP iterations"
+        )
+    canonical_ranks = [
+        int(value)
+        for value in final_cfg.get("ranks", [32, 64, 128, 256, 512])
+    ]
+    canonical_seeds = [
+        int(value) for value in final_cfg.get("seeds", [0, 1, 2])
+    ]
+    ranks = [
+        int(value)
+        for value in final_cfg.get("execution_ranks", canonical_ranks)
+    ]
+    seeds = [
+        int(value)
+        for value in final_cfg.get("execution_seeds", canonical_seeds)
+    ]
+    if not set(ranks).issubset(canonical_ranks) or not set(seeds).issubset(
+        canonical_seeds
+    ):
+        raise ValueError("Requested final-structural subset is outside the canonical grid")
+    initializer = str(final_cfg.get("init", "random"))
+    if initializer != "random":
+        raise ValueError("The final structural protocol requires random CP initialization")
+    output_dir = ensure_dir(
+        resolve_path(
+            final_cfg.get(
+                "output_dir", "results/camvid_vgg_cp/final_structural"
+            ),
+            root,
+        )
+    )
+    factors_dir = ensure_dir(output_dir / "factors")
+    save_config_snapshot(output_dir / "final_structural_config_used.json", config)
+    summary_path = output_dir / "final_structural_summary.csv"
+    previous_metadata_path = output_dir / "final_structural_metadata.json"
+    previous_metadata = (
+        load_manifest(previous_metadata_path)
+        if previous_metadata_path.is_file()
+        else {}
+    )
+    failure_history = list(previous_metadata.get("failure_history", []))
+    raw_rows = []
+    if summary_path.is_file():
+        with open(summary_path, newline="") as handle:
+            raw_rows = list(csv.DictReader(handle))
+    normalized, preserved, normalization_diagnostics = (
+        normalize_final_structural_rows(
+            raw_rows, context="incremental final structural CSV load"
+        )
+    )
+    persisted = {final_structural_key(row): row for row in normalized}
+    completed_keys = {
+        key for key, row in persisted.items() if row.get("status") == "completed"
+    }
+
+    preliminary_paths = [
+        experiment_output_dir(config, root) / name
+        for name in (
+            "reconstruction_summary.csv",
+            "structural_zero_shot_summary.csv",
+            "cp_iteration_sensitivity_summary.csv",
+        )
+    ]
+    preliminary_hashes_before = {
+        str(path): sha256_file(path) for path in preliminary_paths if path.is_file()
+    }
+    context = (
+        _synthetic_structural_context(final_cfg)
+        if synthetic
+        else _canonical_structural_context(config, root)
+    )
+    master_model = context["load_model"]()
+    master_conv = get_module(master_model, context["target_layer"])
+    dense_weight = master_conv.weight.detach().cpu().clone()
+    target_tensor_hash = tensor_sha256(dense_weight)
+    for key in sorted(completed_keys, key=str):
+        row = persisted[key]
+        if row.get("checkpoint_sha256") != context["checkpoint_hash"]:
+            raise RuntimeError(f"Completed row {key} has a different checkpoint hash")
+        if (
+            row.get("dataset_validation_report_sha256")
+            != context["dataset_validation_hash"]
+        ):
+            raise RuntimeError(
+                f"Completed row {key} has a different dataset-validation hash"
+            )
+        if row.get("target_tensor_sha256") != target_tensor_hash:
+            raise RuntimeError(f"Completed row {key} has a different target tensor hash")
+        verify_completed_row_schema(row)
+        if key[0] == FINAL_CP_METHOD:
+            artifact_path = _factor_artifact_path(factors_dir, key[1], key[2])
+            if not artifact_path.is_file():
+                raise FileNotFoundError(
+                    f"Completed CP row {key} lacks its factor artifact: {artifact_path}"
+                )
+            if sha256_file(artifact_path) != row["factor_artifact_sha256"]:
+                raise RuntimeError(f"Factor artifact file hash changed for {key}")
+            loaded, _, artifact_identity = load_factor_artifact(
+                artifact_path,
+                master_conv,
+                expected_rank=key[1],
+                expected_seed=key[2],
+                expected_iteration_budget=FINAL_ITERATION_BUDGET,
+                expected_initializer=initializer,
+                expected_checkpoint_hash=context["checkpoint_hash"],
+                expected_dataset_validation_hash=context[
+                    "dataset_validation_hash"
+                ],
+                expected_target_tensor_hash=target_tensor_hash,
+            )
+            if (
+                artifact_identity["final_factor_hash_sha256"]
+                != row["final_factor_hash_sha256"]
+            ):
+                raise RuntimeError(f"Factor value hash changed for completed row {key}")
+            del loaded
+    diagnostic = reference_diagnostic_for_conv(dense_weight, canonical_ranks, device)
+    dense_costs = _model_costs(
+        master_model, context["target_layer"], context["input_size"], device
+    )
+    dense_metrics = _evaluate_structural_splits(
+        master_model, context, device, max_batches=max_batches
+    )
+    dense_target_parameters = dense_costs["target_layer_parameter_count"]
+    del master_model
+    gc.collect()
+    u, singular_values, vh, svd_runtime, svd_device = output_mode_svd(
+        dense_weight, device=device
+    )
+    tolerance = float(final_cfg.get("numerical_tolerance", 1e-5))
+    memory_efficient = bool(final_cfg.get("memory_efficient_mttkrp", True))
+    chunk_size = int(final_cfg.get("mttkrp_rank_chunk_size", 64))
+    max_explicit = int(
+        final_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2)
+    )
+    thresholds = dict(final_cfg.get("factor_diagnostic_thresholds", {}))
+    failures = []
+    reuse_records = []
+
+    def persist(row):
+        normalized_new, rejected_new, current_diagnostics = (
+            normalize_final_structural_rows(
+                [row], context="incremental final structural append"
+            )
+        )
+        normalization_diagnostics.extend(current_diagnostics)
+        preserved.extend(rejected_new)
+        for accepted in normalized_new:
+            key = final_structural_key(accepted)
+            previous = persisted.get(key)
+            if (
+                previous
+                and previous.get("status") == "completed"
+                and accepted.get("status") != "completed"
+            ):
+                continue
+            persisted[key] = accepted
+        write_csv(summary_path, [*persisted.values(), *preserved])
+
+    for rank in ranks:
+        key = (FINAL_SVD_METHOD, rank, "", "")
+        if key in completed_keys:
+            continue
+        try:
+            model = context["load_model"]()
+            dense_conv = get_module(model, context["target_layer"])
+            replacement = MatrixLowRankConv2d.from_svd(
+                dense_conv, rank, u, singular_values, vh
+            )
+            approximation = replacement.composed_kernel().detach().cpu()
+            matrix_kernel_hash_before = tensor_sha256(approximation)
+            squared, ordinary = normalized_frobenius_residual(
+                dense_weight, approximation
+            )
+            max_bound, output_bound, _ = diagnostic_bounds(diagnostic, rank)
+            if abs(squared - output_bound) > tolerance:
+                raise AssertionError("Matrix-SVD residual does not match output tail")
+            activation = measure_layer_activation_distortion(
+                model,
+                context["target_layer"],
+                replacement,
+                context["validation_loader"],
+                device,
+                max_batches=max_batches,
+            )
+            set_module(model, context["target_layer"], replacement)
+            segmentation = _evaluate_structural_splits(
+                model, context, device, max_batches=max_batches
+            )
+            matrix_kernel_hash_after = tensor_sha256(
+                get_module(model, context["target_layer"]).composed_kernel()
+            )
+            if matrix_kernel_hash_after != matrix_kernel_hash_before:
+                raise AssertionError("Matrix-SVD kernel changed between structural metrics")
+            costs = _model_costs(
+                model, context["target_layer"], context["input_size"], device
+            )
+            row = {
+                "method": FINAL_SVD_METHOD,
+                "rank": rank,
+                "seed": "",
+                "iteration_budget": "",
+                "initializer": "deterministic_output_mode_svd",
+                "status": "completed",
+                "failure_exception": "",
+                "checkpoint_sha256": context["checkpoint_hash"],
+                "dataset_validation_report_sha256": context[
+                    "dataset_validation_hash"
+                ],
+                "target_tensor_sha256": target_tensor_hash,
+                "actual_relative_squared_frobenius_error": squared,
+                "actual_relative_frobenius_error": ordinary,
+                "max_unfolding_tail_bound_squared": max_bound,
+                "output_mode_tail_bound_squared": output_bound,
+                "gap_above_max_bound": squared - max_bound,
+                "decomposition_runtime_seconds": svd_runtime,
+                "decomposition_device": svd_device,
+                "target_layer_parameter_ratio": costs[
+                    "target_layer_parameter_count"
+                ]
+                / dense_target_parameters,
+                "compression_factor": dense_target_parameters
+                / costs["target_layer_parameter_count"],
+                "model_kind": FINAL_SVD_METHOD,
+                "dense_validation_present_class_miou": dense_metrics[
+                    "validation_present_class_miou"
+                ],
+                "dense_test_present_class_miou": dense_metrics[
+                    "test_present_class_miou"
+                ],
+                "same_matrix_svd_layer_reused_for_all_metrics": True,
+                "matrix_kernel_hash_sha256": matrix_kernel_hash_before,
+                **activation,
+                **segmentation,
+                **costs,
+            }
+            verify_completed_row_schema(row)
+            persist(row)
+            del model, replacement, approximation
+        except Exception as exc:
+            failure = {
+                "method": FINAL_SVD_METHOD,
+                "rank": rank,
+                "seed": "",
+                "iteration_budget": "",
+                "status": "failed",
+                "failure_exception": repr(exc),
+                "checkpoint_sha256": context["checkpoint_hash"],
+                "dataset_validation_report_sha256": context[
+                    "dataset_validation_hash"
+                ],
+                "target_tensor_sha256": target_tensor_hash,
+            }
+            failures.append(failure)
+            failure_history.append(failure)
+            persist(failure)
+        gc.collect()
+
+    for rank in ranks:
+        max_bound, output_bound, _ = diagnostic_bounds(diagnostic, rank)
+        for seed in seeds:
+            key = (FINAL_CP_METHOD, rank, seed, FINAL_ITERATION_BUDGET)
+            if key in completed_keys:
+                continue
+            artifact_path = _factor_artifact_path(factors_dir, rank, seed)
+            try:
+                model = context["load_model"]()
+                dense_conv = get_module(model, context["target_layer"])
+                if artifact_path.is_file():
+                    fitted, artifact_payload, artifact = load_factor_artifact(
+                        artifact_path,
+                        dense_conv,
+                        expected_rank=rank,
+                        expected_seed=seed,
+                        expected_iteration_budget=FINAL_ITERATION_BUDGET,
+                        expected_initializer=initializer,
+                        expected_checkpoint_hash=context["checkpoint_hash"],
+                        expected_dataset_validation_hash=context[
+                            "dataset_validation_hash"
+                        ],
+                        expected_target_tensor_hash=target_tensor_hash,
+                    )
+                    decomposition_runtime = float(
+                        artifact_payload["decomposition_runtime_seconds"]
+                    )
+                    initialization_hash = artifact_payload[
+                        "initialization_hash_sha256"
+                    ]
+                    fit_source = "saved_factor_artifact"
+                    approximation = fitted.weight.to_tensor().detach().cpu()
+                else:
+                    expected_initialization = cp_initialization_hash(
+                        dense_conv,
+                        rank,
+                        seed,
+                        initializer,
+                        device,
+                        memory_efficient_mttkrp=memory_efficient,
+                        mttkrp_rank_chunk_size=chunk_size,
+                        mttkrp_max_explicit_bytes=max_explicit,
+                    )
+                    seed_status = set_seed(seed, deterministic=True)
+                    (
+                        fitted,
+                        approximation,
+                        decomposition_runtime,
+                        mttkrp_implementation,
+                        initialization_hash,
+                    ) = fit_cp_approximation_with_initialization_capture(
+                        dense_conv,
+                        rank,
+                        seed,
+                        initializer,
+                        FINAL_ITERATION_BUDGET,
+                        device,
+                        memory_efficient,
+                        chunk_size,
+                        max_explicit,
+                    )
+                    if initialization_hash != expected_initialization:
+                        raise AssertionError("Actual CP initialization hash changed")
+                    artifact = save_factor_artifact(
+                        artifact_path,
+                        fitted,
+                        rank=rank,
+                        seed=seed,
+                        iteration_budget=FINAL_ITERATION_BUDGET,
+                        initializer=initializer,
+                        initialization_hash=initialization_hash,
+                        checkpoint_hash=context["checkpoint_hash"],
+                        dataset_validation_hash=context[
+                            "dataset_validation_hash"
+                        ],
+                        target_tensor_hash=target_tensor_hash,
+                        decomposition_runtime_seconds=decomposition_runtime,
+                        mttkrp_implementation=mttkrp_implementation,
+                    )
+                    artifact_payload = {
+                        "decomposition_runtime_seconds": decomposition_runtime
+                    }
+                    fit_source = "new_independent_fit"
+                factor_hash_before = fitted_factor_hash(fitted)
+                if factor_hash_before != artifact["final_factor_hash_sha256"]:
+                    raise AssertionError("Fitted factors differ from saved artifact")
+                factor_diagnostics = factor_scaling_diagnostics(
+                    fitted,
+                    near_zero_threshold=float(
+                        thresholds.get(
+                            "near_zero_component_norm_threshold", 1e-12
+                        )
+                    ),
+                    extreme_norm_threshold=float(
+                        thresholds.get("extreme_factor_norm_threshold", 1e6)
+                    ),
+                    scaling_spread_threshold=float(
+                        thresholds.get("scaling_spread_threshold", 1e6)
+                    ),
+                )
+                reconstruction = verify_cp_reconstruction(
+                    dense_weight,
+                    approximation,
+                    fitted,
+                    tolerance=tolerance,
+                    output_chunk_size=int(
+                        final_cfg.get("residual_output_chunk_size", 8)
+                    ),
+                )
+                factor_diagnostics = finalize_degeneracy_indicators(
+                    factor_diagnostics,
+                    reconstruction,
+                    bounded_reconstruction_multiple=float(
+                        thresholds.get("bounded_reconstruction_multiple", 10.0)
+                    ),
+                    cancellation_ratio_threshold=float(
+                        thresholds.get("cancellation_ratio_threshold", 1e3)
+                    ),
+                )
+                if not reconstruction["residual_verification_passed"]:
+                    raise AssertionError("CP reconstruction verification failed")
+                squared = reconstruction[
+                    "actual_relative_squared_frobenius_error"
+                ]
+                if squared < max_bound - tolerance:
+                    raise AssertionError("CP residual violates unfolding lower bound")
+                factor_hash_after_reconstruction = fitted_factor_hash(fitted)
+                activation = measure_layer_activation_distortion(
+                    model,
+                    context["target_layer"],
+                    fitted,
+                    context["validation_loader"],
+                    device,
+                    max_batches=max_batches,
+                )
+                factor_hash_after_activation = fitted_factor_hash(fitted)
+                set_module(model, context["target_layer"], fitted)
+                segmentation = _evaluate_structural_splits(
+                    model, context, device, max_batches=max_batches
+                )
+                factor_hash_after_zero_shot = fitted_factor_hash(
+                    get_module(model, context["target_layer"])
+                )
+                factor_hashes = {
+                    factor_hash_before,
+                    factor_hash_after_reconstruction,
+                    factor_hash_after_activation,
+                    factor_hash_after_zero_shot,
+                }
+                if len(factor_hashes) != 1:
+                    raise AssertionError("CP factors changed between structural metrics")
+                costs = _model_costs(
+                    model, context["target_layer"], context["input_size"], device
+                )
+                row = {
+                    "method": FINAL_CP_METHOD,
+                    "rank": rank,
+                    "seed": seed,
+                    "iteration_budget": FINAL_ITERATION_BUDGET,
+                    "initializer": initializer,
+                    "status": "completed",
+                    "failure_exception": "",
+                    "checkpoint_sha256": context["checkpoint_hash"],
+                    "dataset_validation_report_sha256": context[
+                        "dataset_validation_hash"
+                    ],
+                    "target_tensor_sha256": target_tensor_hash,
+                    "initialization_hash_sha256": initialization_hash,
+                    "final_factor_hash_sha256": factor_hash_before,
+                    "factor_artifact_path": artifact["factor_artifact_path"],
+                    "factor_artifact_sha256": artifact[
+                        "factor_artifact_sha256"
+                    ],
+                    "factor_artifact_identity_verified": True,
+                    "same_fitted_factors_reused_for_all_metrics": True,
+                    "factor_hash_after_reconstruction": factor_hash_after_reconstruction,
+                    "factor_hash_after_activation_distortion": factor_hash_after_activation,
+                    "factor_hash_after_zero_shot": factor_hash_after_zero_shot,
+                    "fit_source": fit_source,
+                    "deterministic_settings": json.dumps(
+                        seed_status if fit_source == "new_independent_fit" else {},
+                        sort_keys=True,
+                    ),
+                    "actual_relative_squared_frobenius_error": squared,
+                    "actual_relative_frobenius_error": reconstruction[
+                        "actual_relative_frobenius_error"
+                    ],
+                    "max_unfolding_tail_bound_squared": max_bound,
+                    "output_mode_tail_bound_squared": output_bound,
+                    "gap_above_max_bound": squared - max_bound,
+                    "decomposition_runtime_seconds": decomposition_runtime,
+                    "decomposition_device": torch.device(device).type,
+                    "mttkrp_implementation": (
+                        mttkrp_implementation
+                        if fit_source == "new_independent_fit"
+                        else artifact_payload.get("mttkrp_implementation", "")
+                    ),
+                    "target_layer_parameter_ratio": costs[
+                        "target_layer_parameter_count"
+                    ]
+                    / dense_target_parameters,
+                    "compression_factor": dense_target_parameters
+                    / costs["target_layer_parameter_count"],
+                    "model_kind": FINAL_CP_METHOD,
+                    "dense_validation_present_class_miou": dense_metrics[
+                        "validation_present_class_miou"
+                    ],
+                    "dense_test_present_class_miou": dense_metrics[
+                        "test_present_class_miou"
+                    ],
+                    **reconstruction,
+                    **factor_diagnostics,
+                    **activation,
+                    **segmentation,
+                    **costs,
+                }
+                verify_completed_row_schema(row)
+                persist(row)
+                reuse_records.append(
+                    {
+                        "rank": rank,
+                        "seed": seed,
+                        "factor_hash": factor_hash_before,
+                        "same_fitted_factors_reused_for_all_metrics": True,
+                    }
+                )
+                del model, fitted, approximation
+            except Exception as exc:
+                failure = {
+                    "method": FINAL_CP_METHOD,
+                    "rank": rank,
+                    "seed": seed,
+                    "iteration_budget": FINAL_ITERATION_BUDGET,
+                    "initializer": initializer,
+                    "status": "failed",
+                    "failure_exception": repr(exc),
+                    "checkpoint_sha256": context["checkpoint_hash"],
+                    "dataset_validation_report_sha256": context[
+                        "dataset_validation_hash"
+                    ],
+                    "target_tensor_sha256": target_tensor_hash,
+                    "factor_artifact_path": str(artifact_path),
+                    "factor_artifact_exists": artifact_path.is_file(),
+                }
+                failures.append(failure)
+                failure_history.append(failure)
+                persist(failure)
+            gc.collect()
+
+    final_rows = [*persisted.values(), *preserved]
+    write_csv(summary_path, final_rows)
+    currently_failed_rows = [
+        row for row in persisted.values() if row.get("status") != "completed"
+    ]
+    rank_summary, aggregate_diagnostics = aggregate_final_structural_rows(
+        final_rows
+    )
+    reuse_records = [
+        {
+            "rank": int(row["rank"]),
+            "seed": int(row["seed"]),
+            "factor_hash": row["final_factor_hash_sha256"],
+            "factor_artifact_sha256": row["factor_artifact_sha256"],
+            "same_fitted_factors_reused_for_all_metrics": (
+                str(row.get("same_fitted_factors_reused_for_all_metrics", "")).lower()
+                == "true"
+                if isinstance(
+                    row.get("same_fitted_factors_reused_for_all_metrics"), str
+                )
+                else bool(row.get("same_fitted_factors_reused_for_all_metrics"))
+            ),
+        }
+        for row in persisted.values()
+        if row.get("method") == FINAL_CP_METHOD
+        and row.get("status") == "completed"
+    ]
+    normalization_diagnostics.extend(aggregate_diagnostics)
+    rank_summary_path = write_csv(
+        output_dir / "final_structural_rank_summary.csv", rank_summary
+    )
+    figure_outputs = []
+    figure_failures = []
+    try:
+        figure_outputs, figure_diagnostics = write_final_structural_figures(
+            final_rows,
+            resolve_path(
+                final_cfg.get("figures_dir", "results/paper/figures"), root
+            ),
+        )
+        normalization_diagnostics.extend(figure_diagnostics)
+    except Exception as exc:
+        figure_failures.append({"exception": repr(exc), "nonfatal": True})
+    audit_path = resolve_path(
+        final_cfg.get(
+            "audit_path", "results/paper/final_structural_audit.md"
+        ),
+        root,
+    )
+    try:
+        audit_output, audit_complete = write_final_structural_audit(
+            final_rows,
+            rank_summary,
+            audit_path,
+            expected_ranks=canonical_ranks,
+            expected_seeds=canonical_seeds,
+        )
+        audit_failure = ""
+    except Exception as exc:
+        audit_output, audit_complete = "", False
+        audit_failure = repr(exc)
+    preliminary_hashes_after = {
+        str(path): sha256_file(path) for path in preliminary_paths if path.is_file()
+    }
+    if preliminary_hashes_after != preliminary_hashes_before:
+        raise RuntimeError("A preliminary structural artifact changed during final-structural")
+    metadata_path = save_manifest(
+        output_dir / "final_structural_metadata.json",
+        {
+            "kind": "final_structural_200_iteration_evaluation",
+            "experiment_id": config.get("experiment_id"),
+            "canonical_ranks": canonical_ranks,
+            "canonical_cp_seeds": canonical_seeds,
+            "iteration_budget": FINAL_ITERATION_BUDGET,
+            "initializer": initializer,
+            "execution_ranks": ranks,
+            "execution_seeds": seeds,
+            "checkpoint_sha256": context["checkpoint_hash"],
+            "dataset_validation_report_sha256": context[
+                "dataset_validation_hash"
+            ],
+            "target_tensor_sha256": target_tensor_hash,
+            "target_layer": context["target_layer"],
+            "dense_reference_metrics": dense_metrics,
+            "dense_reference_costs": dense_costs,
+            "same_fitted_factor_reuse_checks": reuse_records,
+            "preliminary_artifact_hashes_before": preliminary_hashes_before,
+            "preliminary_artifact_hashes_after": preliminary_hashes_after,
+            "preliminary_artifacts_preserved": True,
+            "summary_path": str(summary_path),
+            "rank_summary_path": str(rank_summary_path),
+            "factor_artifacts_dir": str(factors_dir),
+            "figure_outputs": figure_outputs,
+            "figure_generation_failures": figure_failures,
+            "audit_output": audit_output,
+            "audit_complete": audit_complete,
+            "audit_generation_failure": audit_failure,
+            "failures_in_current_invocation": failures,
+            "failure_history": failure_history,
+            "currently_failed_scientific_rows": currently_failed_rows,
+            "row_normalization_diagnostics": normalization_diagnostics,
+            "software_versions": _software_versions(),
+            "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(
+                resource.RUSAGE_SELF
+            ).ru_maxrss,
+        },
+        device=device,
+    )
+    del dense_weight, u, singular_values, vh
+    gc.collect()
     return metadata_path
 
 

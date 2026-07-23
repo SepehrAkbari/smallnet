@@ -1092,3 +1092,276 @@ def write_rank512_stability_audit(
             )
     path.write_text("\n".join(lines) + "\n")
     return str(path), complete
+
+
+def write_rank512_repeatability_decision(
+    rows,
+    *,
+    audit_path,
+    figures_dir,
+    expected_rank=512,
+    expected_seeds=(0, 1, 2),
+    expected_budgets=(200, 400),
+    expected_repetitions=(0, 1),
+    tolerance=1e-5,
+):
+    '''Validate and report the intentionally lean rank-512 repeatability protocol.'''
+    normalized, rejected, diagnostics = normalize_rank512_stability_rows(
+        rows, context="rank-512 lean repeatability decision"
+    )
+    expected_keys = {
+        (
+            STABILITY_METHOD,
+            int(expected_rank),
+            int(seed),
+            int(budget),
+            int(repetition),
+            PRIMARY_PRECISION,
+        )
+        for seed in expected_seeds
+        for budget in expected_budgets
+        for repetition in expected_repetitions
+    }
+    scientific = {scientific_rank512_stability_key(row): row for row in normalized}
+    unexpected = set(scientific) - expected_keys
+    missing = expected_keys - set(scientific)
+    if rejected or unexpected or missing:
+        raise ValueError(
+            "Lean repeatability rows do not match the requested 12-row protocol: "
+            f"rejected={len(rejected)}, unexpected={sorted(unexpected)}, missing={sorted(missing)}"
+        )
+    completed = [scientific[key] for key in sorted(expected_keys)]
+    failures = [row for row in completed if row.get("status") != "completed"]
+    if failures:
+        raise ValueError(f"Lean repeatability protocol contains {len(failures)} failed row(s)")
+    if not all(
+        bool(row.get("residual_verification_passed"))
+        and bool(row.get("reconstruction_all_finite"))
+        and bool(row.get("factor_diagnostics_finite"))
+        for row in completed
+    ):
+        raise ValueError("Lean repeatability protocol contains a failed finite/residual check")
+
+    grouped = defaultdict(list)
+    for row in completed:
+        grouped[(int(row["seed"]), int(row["iteration_budget"]))].append(row)
+    group_records = []
+    for (seed, budget), group in sorted(grouped.items()):
+        residuals = np.asarray(
+            [float(row["actual_relative_squared_frobenius_error"]) for row in group],
+            dtype=np.float64,
+        )
+        factor_hashes = {row["final_factor_hash_sha256"] for row in group}
+        init_hashes = {row["initialization_hash_sha256"] for row in group}
+        group_records.append(
+            {
+                "rank": int(expected_rank),
+                "seed": seed,
+                "iteration_budget": budget,
+                "repetition_count": len(group),
+                "mean_normalized_squared_frobenius_residual": float(residuals.mean()),
+                "repetition_residual_range": float(residuals.max() - residuals.min()),
+                "exact_residual_repeatability": bool(residuals.max() == residuals.min()),
+                "final_factor_hashes_identical": len(factor_hashes) == 1,
+                "initialization_hashes_identical": len(init_hashes) == 1,
+                "component_scaling_spread_max": max(
+                    float(row["component_scaling_spread_max"]) for row in group
+                ),
+                "component_scaling_spread_median_mean": float(
+                    np.mean(
+                        [
+                            float(row["component_scaling_spread_median"])
+                            for row in group
+                        ]
+                    )
+                ),
+                "cancellation_ratio_max": max(
+                    float(
+                        row[
+                            "component_contribution_sum_to_reconstructed_norm_ratio"
+                        ]
+                    )
+                    for row in group
+                ),
+                "maximum_absolute_factor_value": max(
+                    max(
+                        float(row[f"factor_{index}_max_abs_value"])
+                        for index in range(4)
+                    )
+                    for row in group
+                ),
+                "factor_degeneracy_detected": any(
+                    bool(row["factor_degeneracy_detected"]) for row in group
+                ),
+            }
+        )
+    exact_repeatability = all(
+        record["exact_residual_repeatability"]
+        and record["final_factor_hashes_identical"]
+        and record["initialization_hashes_identical"]
+        for record in group_records
+    )
+    by_budget = {}
+    for budget in expected_budgets:
+        per_seed = np.asarray(
+            [
+                record["mean_normalized_squared_frobenius_residual"]
+                for record in group_records
+                if record["iteration_budget"] == int(budget)
+            ],
+            dtype=np.float64,
+        )
+        by_budget[int(budget)] = {
+            "mean": float(per_seed.mean()),
+            "std_population": float(per_seed.std(ddof=0)),
+            "min": float(per_seed.min()),
+            "max": float(per_seed.max()),
+            "seed_range": float(per_seed.max() - per_seed.min()),
+        }
+    lower, upper = map(int, expected_budgets)
+    deterioration = by_budget[upper]["mean"] - by_budget[lower]["mean"]
+
+    figures_dir = Path(figures_dir)
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    figure_rows = []
+    for row in completed:
+        figure_rows.append(
+            {
+                "series": "individual_repetition",
+                "rank": int(row["rank"]),
+                "seed": int(row["seed"]),
+                "iteration_budget": int(row["iteration_budget"]),
+                "repetition": int(row["repetition"]),
+                "normalized_squared_frobenius_residual": float(
+                    row["actual_relative_squared_frobenius_error"]
+                ),
+                "final_factor_hash_sha256": row["final_factor_hash_sha256"],
+            }
+        )
+    for budget, summary in sorted(by_budget.items()):
+        figure_rows.append(
+            {
+                "series": "seed_mean",
+                "rank": int(expected_rank),
+                "seed": "",
+                "iteration_budget": budget,
+                "repetition": "",
+                "normalized_squared_frobenius_residual": summary["mean"],
+                "final_factor_hash_sha256": "",
+            }
+        )
+    csv_path = figures_dir / "rank512_repeatability.csv"
+    write_csv(csv_path, figure_rows)
+
+    fig, ax = plt.subplots(figsize=(5.8, 4.0))
+    colors = plt.get_cmap("tab10")
+    for seed in expected_seeds:
+        seed_rows = [row for row in completed if int(row["seed"]) == int(seed)]
+        for repetition in expected_repetitions:
+            values = sorted(
+                [
+                    row
+                    for row in seed_rows
+                    if int(row["repetition"]) == int(repetition)
+                ],
+                key=lambda row: int(row["iteration_budget"]),
+            )
+            ax.plot(
+                [int(row["iteration_budget"]) for row in values],
+                [
+                    float(row["actual_relative_squared_frobenius_error"])
+                    for row in values
+                ],
+                color=colors(int(seed)),
+                marker="o" if int(repetition) == 0 else "x",
+                linewidth=1.0,
+                alpha=0.75,
+                label=f"seed {seed}, repetition {repetition}",
+            )
+    ax.plot(
+        list(sorted(by_budget)),
+        [by_budget[budget]["mean"] for budget in sorted(by_budget)],
+        color="black",
+        marker="o",
+        linewidth=2.2,
+        label="seed mean",
+    )
+    ax.set_xticks(list(sorted(by_budget)))
+    ax.set_xlabel("Requested CP iteration budget")
+    ax.set_ylabel("Normalized squared Frobenius residual")
+    ax.set_title("Rank-512 CP repeatability at 200 and 400 iterations")
+    ax.grid(axis="y", color="#DDDDDD", linewidth=0.6)
+    ax.legend(frameon=False, fontsize=7, ncol=2)
+    fig.tight_layout()
+    figure_paths = [str(csv_path)]
+    for suffix in ("pdf", "png"):
+        output = figures_dir / f"rank512_repeatability.{suffix}"
+        fig.savefig(output, dpi=300, bbox_inches="tight")
+        figure_paths.append(str(output))
+    plt.close(fig)
+
+    audit_path = Path(audit_path)
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    scaling_lines = []
+    for record in group_records:
+        scaling_lines.append(
+            f"- seed {record['seed']}, budget {record['iteration_budget']}: "
+            f"max scaling spread `{record['component_scaling_spread_max']:.6g}`, "
+            f"max cancellation ratio `{record['cancellation_ratio_max']:.6g}`, "
+            f"max absolute factor value `{record['maximum_absolute_factor_value']:.6g}`, "
+            f"threshold-based degeneracy flag `{record['factor_degeneracy_detected']}`."
+        )
+    audit_path.write_text(
+        "\n".join(
+            [
+                "# Rank-512 CP repeatability decision",
+                "",
+                "This is an intentionally lean protocol decision, not a completed version of the "
+                "original 37-row numerical-stability grid.",
+                "",
+                "## Protocol validation",
+                "",
+                f"- Completed lean scientific rows: **{len(completed)}/{len(expected_keys)}**.",
+                f"- Exact residual repeatability across repetitions: **{exact_repeatability}**.",
+                "- Final-factor hashes are identical within every seed/budget group: "
+                f"**{all(record['final_factor_hashes_identical'] for record in group_records)}**.",
+                "- Residual verification passed for every row: **True**.",
+                "- Nonfinite rows: **0**.",
+                "- Failed rows: **0**.",
+                "",
+                "## Residual comparison",
+                "",
+                f"- Mean normalized squared residual at 200 iterations: `{by_budget[200]['mean']:.12f}`.",
+                f"- Mean normalized squared residual at 400 iterations: `{by_budget[400]['mean']:.12f}`.",
+                f"- Mean deterioration from 200 to 400 iterations: `{deterioration:.12f}`.",
+                f"- Seed range at 200 iterations: `{by_budget[200]['seed_range']:.12f}`.",
+                f"- Seed range at 400 iterations: `{by_budget[400]['seed_range']:.12f}`.",
+                "",
+                "## Factor-scaling diagnostics",
+                "",
+                *scaling_lines,
+                "",
+                "The recorded threshold flags are descriptive diagnostics. They do not certify CP "
+                "degeneracy, but the exact repeated residuals and final-factor hashes establish that "
+                "the 200-to-400 deterioration is reproducible rather than an isolated corrupted run.",
+                "",
+                "## Accepted decision",
+                "",
+                "**Use a common CP fitting budget of 200 iterations for all downstream ranks.**",
+                "",
+                "The remaining rank-512 stability budgets and float64 optimization subset will not be "
+                "run. The intentionally partial full-grid audit must remain labeled incomplete.",
+            ]
+        )
+        + "\n"
+    )
+    return {
+        "audit_path": str(audit_path),
+        "figure_paths": figure_paths,
+        "completed_rows": len(completed),
+        "exact_repeatability": exact_repeatability,
+        "mean_residual_200": by_budget[200]["mean"],
+        "mean_residual_400": by_budget[400]["mean"],
+        "mean_deterioration_200_to_400": deterioration,
+        "normalization_diagnostics": diagnostics,
+    }

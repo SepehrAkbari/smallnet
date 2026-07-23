@@ -225,6 +225,49 @@ Completed keys are skipped and missing or failed keys are retried. A row is pers
 
 The residual is recomputed with float64 accumulation from both the fitted tensor and an independent output-channel-chunked CP contraction. Factor norms, per-component scaling spreads, component contribution norms, cancellation indicators, finite checks, final-factor hashes, tensor norms, and reconstruction-path agreement are recorded. “Completed requested budget” is not a convergence claim, and the audit does not adopt a best-observed-residual rule.
 
+## Final 200-iteration structural evaluation
+
+The accepted downstream CP fitting protocol uses one common budget of 200 iterations for ranks 32, 64, 128, 256, and 512, with seeds 0, 1, and 2. The `final-structural` stage is isolated under `results/camvid_vgg_cp/final_structural/`; it never overwrites the preliminary ten-iteration reconstruction, sensitivity, or structural zero-shot artifacts.
+
+Each CP scientific key is fitted at most once. The fitted layer is saved immediately under `final_structural/factors/`, then the exact same factors are used for weight reconstruction, validation-set target-layer activation distortion, and validation/test zero-shot segmentation. On resume, a valid saved factor artifact is loaded instead of refitting. Its checkpoint hash, dataset-validation hash, target-tensor hash, protocol fields, file SHA-256, and factor-value hash must all match.
+
+Activation distortion is isolated to `classifier.0`. A forward hook captures the input received by the dense target layer, and that identical input is passed to the compressed layer. Global normalized error is accumulated from total squared norms, not from batch-level ratios. Per-example normalized squared errors are separately summarized by their mean, population standard deviation, minimum, and maximum.
+
+Run a dataset-free synthetic smoke test locally:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage final-structural \
+  --device cpu \
+  --synthetic-smoke
+```
+
+Run or resume one canonical rank at a time on CUDA:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage final-structural \
+  --device cuda \
+  --ranks 128 \
+  --seeds 0 1 2
+```
+
+The deterministic `matrix_svd_output_unfolding` row for the requested rank and all missing CP seed rows are computed. Completed keys are validated and skipped; failed or missing keys are retried. The minimum outputs are:
+
+- `results/camvid_vgg_cp/final_structural/final_structural_summary.csv`
+- `results/camvid_vgg_cp/final_structural/final_structural_rank_summary.csv`
+- `results/camvid_vgg_cp/final_structural/final_structural_metadata.json`
+- `results/camvid_vgg_cp/final_structural/final_structural_config_used.json`
+- `results/camvid_vgg_cp/final_structural/factors/`
+- `results/paper/final_structural_audit.md`
+- `results/paper/figures/final_structural_weight_error.{csv,pdf,png}`
+- `results/paper/figures/final_structural_activation_distortion.{csv,pdf,png}`
+- `results/paper/figures/final_structural_zero_shot_tradeoff.{csv,pdf,png}`
+
+The matrix-SVD control is the deterministic truncated SVD of the output-channel unfolding. It is not described as CP or as a tensor decomposition.
+
 ## Outputs
 
 Canonical reconstruction artifacts:
