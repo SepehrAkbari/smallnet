@@ -4,7 +4,7 @@ Layer factorization utilities for compression experiments.
 
 import torch
 import torch.nn as nn
-# import tltorch
+import tltorch
 
 from src.smallnet.modules import get_module, set_module
 
