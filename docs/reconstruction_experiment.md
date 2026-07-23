@@ -267,6 +267,12 @@ The deterministic `matrix_svd_output_unfolding` row for the requested rank and a
 - `results/paper/figures/final_structural_zero_shot_tradeoff.{csv,pdf,png}`
 
 The matrix-SVD control is the deterministic truncated SVD of the output-channel unfolding. It is not described as CP or as a tensor decomposition.
+Its final-structural acceptance check compares the composed-kernel residual
+with the tail computed from the exact singular values used for that
+replacement, using CPU float64 accumulation. A tail retained from the earlier
+reconstruction diagnostic is provenance rather than the equality target; see
+[`final_structural_svd_tail_verification.md`](final_structural_svd_tail_verification.md)
+for the rank-32 discrepancy analysis and recorded verification fields.
 
 ## Outputs
 

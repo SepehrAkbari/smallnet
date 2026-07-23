@@ -99,6 +99,7 @@ from src.smallnet.final_structural import (
     measure_layer_activation_distortion,
     normalize_final_structural_rows,
     save_factor_artifact,
+    verify_matrix_svd_reconstruction,
     verify_completed_row_schema,
     write_final_structural_audit,
     write_final_structural_figures,
@@ -2156,6 +2157,7 @@ def _synthetic_structural_context(final_cfg):
         "dataset_validation_hash": "synthetic",
         "input_size": (1, 3, 8, 9),
         "model_kind": "synthetic",
+        "stored_reconstruction_metadata_path": None,
     }
 
 
@@ -2178,6 +2180,13 @@ def _canonical_structural_context(config, root):
     ) != int(expected_unknown):
         raise RuntimeError("Dataset validation report does not match approved unknown pixels")
     checkpoint_path = dense_checkpoint_path(config, root)
+    reconstruction_metadata_path = (
+        experiment_output_dir(config, root) / "reconstruction_metadata.json"
+    )
+    if not reconstruction_metadata_path.is_file():
+        raise FileNotFoundError(
+            "Canonical reconstruction metadata is required for stored-bound provenance"
+        )
     names = load_camvid_class_names(class_dict_path(config, root))
     h, w = image_size(config)
     return {
@@ -2196,6 +2205,7 @@ def _canonical_structural_context(config, root):
             profile_config(config).get("input_size", [1, 3, h, w])
         ),
         "model_kind": "camvid_vgg16_fcn32s",
+        "stored_reconstruction_metadata_path": reconstruction_metadata_path,
     }
 
 
@@ -2381,7 +2391,53 @@ def run_final_structural(config, root, device, max_batches=None):
             ):
                 raise RuntimeError(f"Factor value hash changed for completed row {key}")
             del loaded
-    diagnostic = reference_diagnostic_for_conv(dense_weight, canonical_ranks, device)
+    stored_metadata_path = context["stored_reconstruction_metadata_path"]
+    if stored_metadata_path is not None:
+        stored_reconstruction_metadata = load_manifest(stored_metadata_path)
+        if (
+            stored_reconstruction_metadata.get("dense_checkpoint_sha256")
+            != context["checkpoint_hash"]
+        ):
+            raise RuntimeError(
+                "Stored reconstruction diagnostic has a different checkpoint hash"
+            )
+        if (
+            stored_reconstruction_metadata.get("target_layer")
+            != context["target_layer"]
+        ):
+            raise RuntimeError(
+                "Stored reconstruction diagnostic has a different target layer"
+            )
+        diagnostic = stored_reconstruction_metadata.get("diagnostic")
+        if not diagnostic or tuple(diagnostic.get("shape", ())) != tuple(
+            dense_weight.shape
+        ):
+            raise RuntimeError(
+                "Stored reconstruction diagnostic has a different target tensor shape"
+            )
+        stored_diagnostic_provenance = {
+            "path": str(stored_metadata_path),
+            "environment": stored_reconstruction_metadata.get("environment", {}),
+            "software_versions": stored_reconstruction_metadata.get(
+                "software_versions", {}
+            ),
+            "output_mode_matrix_svd_device": stored_reconstruction_metadata.get(
+                "output_mode_matrix_svd_device",
+                diagnostic.get("output_mode_matrix_svd_device", ""),
+            ),
+        }
+    else:
+        diagnostic = reference_diagnostic_for_conv(
+            dense_weight, canonical_ranks, device
+        )
+        stored_diagnostic_provenance = {
+            "path": "synthetic_current_run",
+            "environment": {},
+            "software_versions": {},
+            "output_mode_matrix_svd_device": diagnostic.get(
+                "output_mode_matrix_svd_device", ""
+            ),
+        }
     dense_costs = _model_costs(
         master_model, context["target_layer"], context["input_size"], device
     )
@@ -2436,12 +2492,26 @@ def run_final_structural(config, root, device, max_batches=None):
             )
             approximation = replacement.composed_kernel().detach().cpu()
             matrix_kernel_hash_before = tensor_sha256(approximation)
-            squared, ordinary = normalized_frobenius_residual(
-                dense_weight, approximation
+            max_bound, stored_output_bound, _ = diagnostic_bounds(
+                diagnostic, rank
             )
-            max_bound, output_bound, _ = diagnostic_bounds(diagnostic, rank)
-            if abs(squared - output_bound) > tolerance:
-                raise AssertionError("Matrix-SVD residual does not match output tail")
+            matrix_verification = verify_matrix_svd_reconstruction(
+                dense_weight,
+                replacement,
+                u,
+                singular_values,
+                vh,
+                rank,
+                stored_diagnostic_output_tail_squared=stored_output_bound,
+                tolerance=tolerance,
+                svd_computation_device=svd_device,
+            )
+            squared = matrix_verification[
+                "actual_relative_squared_frobenius_error"
+            ]
+            ordinary = matrix_verification[
+                "actual_relative_frobenius_error"
+            ]
             activation = measure_layer_activation_distortion(
                 model,
                 context["target_layer"],
@@ -2478,7 +2548,9 @@ def run_final_structural(config, root, device, max_batches=None):
                 "actual_relative_squared_frobenius_error": squared,
                 "actual_relative_frobenius_error": ordinary,
                 "max_unfolding_tail_bound_squared": max_bound,
-                "output_mode_tail_bound_squared": output_bound,
+                "output_mode_tail_bound_squared": matrix_verification[
+                    "current_output_mode_tail_bound_squared"
+                ],
                 "gap_above_max_bound": squared - max_bound,
                 "decomposition_runtime_seconds": svd_runtime,
                 "decomposition_device": svd_device,
@@ -2497,6 +2569,7 @@ def run_final_structural(config, root, device, max_batches=None):
                 ],
                 "same_matrix_svd_layer_reused_for_all_metrics": True,
                 "matrix_kernel_hash_sha256": matrix_kernel_hash_before,
+                **matrix_verification,
                 **activation,
                 **segmentation,
                 **costs,
@@ -2799,6 +2872,34 @@ def run_final_structural(config, root, device, max_batches=None):
         if row.get("method") == FINAL_CP_METHOD
         and row.get("status") == "completed"
     ]
+    matrix_svd_tail_comparisons = [
+        {
+            "rank": int(row["rank"]),
+            "current_output_mode_tail_bound_squared": float(
+                row["current_output_mode_tail_bound_squared"]
+            ),
+            "stored_diagnostic_output_mode_tail_bound_squared": float(
+                row["stored_diagnostic_output_mode_tail_bound_squared"]
+            ),
+            "current_vs_direct_residual_absolute_difference": float(
+                row["current_vs_direct_residual_absolute_difference"]
+            ),
+            "current_vs_stored_output_tail_absolute_difference": float(
+                row["current_vs_stored_output_tail_absolute_difference"]
+            ),
+            "matrix_svd_residual_verification_passed": str(
+                row["matrix_svd_residual_verification_passed"]
+            ).lower()
+            == "true",
+            "matrix_svd_stored_tail_agreement_within_tolerance": str(
+                row["matrix_svd_stored_tail_agreement_within_tolerance"]
+            ).lower()
+            == "true",
+        }
+        for row in persisted.values()
+        if row.get("method") == FINAL_SVD_METHOD
+        and row.get("status") == "completed"
+    ]
     normalization_diagnostics.extend(aggregate_diagnostics)
     rank_summary_path = write_csv(
         output_dir / "final_structural_rank_summary.csv", rank_summary
@@ -2858,6 +2959,15 @@ def run_final_structural(config, root, device, max_batches=None):
             "dense_reference_metrics": dense_metrics,
             "dense_reference_costs": dense_costs,
             "same_fitted_factor_reuse_checks": reuse_records,
+            "stored_diagnostic_provenance": stored_diagnostic_provenance,
+            "matrix_svd_tail_comparisons": matrix_svd_tail_comparisons,
+            "matrix_svd_scientific_verification_protocol": (
+                "The direct composed-kernel residual is accumulated on CPU in float64 "
+                "and compared only with the output-mode tail computed from the exact "
+                "singular values used to build that replacement. The stored diagnostic "
+                "tail is retained solely as provenance and may disagree without rejecting "
+                "an otherwise verified row."
+            ),
             "preliminary_artifact_hashes_before": preliminary_hashes_before,
             "preliminary_artifact_hashes_after": preliminary_hashes_after,
             "preliminary_artifacts_preserved": True,

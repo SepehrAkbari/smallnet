@@ -125,6 +125,109 @@ def fitted_factor_hash(module):
     )
 
 
+def verify_matrix_svd_reconstruction(
+    reference,
+    replacement,
+    u,
+    singular_values,
+    vh,
+    rank,
+    *,
+    stored_diagnostic_output_tail_squared,
+    tolerance=1e-5,
+    row_chunk=32,
+    svd_computation_device="",
+):
+    '''Verify a matrix-SVD row against the exact SVD used to construct it.'''
+    reference = reference.detach().cpu()
+    approximation = replacement.composed_kernel().detach().cpu()
+    if tuple(reference.shape) != tuple(approximation.shape):
+        raise ValueError("Matrix-SVD reference and composed-kernel shapes differ")
+    rank = int(rank)
+    singular_values64 = singular_values.detach().cpu().to(torch.float64)
+    total_energy = torch.sum(singular_values64.square())
+    if total_energy <= 0:
+        raise ValueError("Matrix-SVD tail is undefined for a zero tensor")
+    current_tail = float(
+        torch.sum(singular_values64[rank:].square()) / total_energy
+    )
+    u64 = u.detach().cpu().to(torch.float64)
+    vh64 = vh.detach().cpu().to(torch.float64)
+    left64 = u64[:, :rank] * singular_values64[:rank]
+    dense_squared = 0.0
+    residual_squared = 0.0
+    kernel_difference_squared = 0.0
+    direct_kernel_squared = 0.0
+    kernel_max_abs_difference = 0.0
+    reference_matrix = reference.reshape(reference.shape[0], -1)
+    approximation_matrix = approximation.reshape(approximation.shape[0], -1)
+    for start in range(0, int(reference.shape[0]), int(row_chunk)):
+        stop = min(start + int(row_chunk), int(reference.shape[0]))
+        reference_chunk = reference_matrix[start:stop].to(torch.float64)
+        approximation_chunk = approximation_matrix[start:stop].to(torch.float64)
+        direct_chunk = left64[start:stop] @ vh64[:rank]
+        residual_chunk = reference_chunk - approximation_chunk
+        kernel_difference = approximation_chunk - direct_chunk
+        dense_squared += float(torch.sum(reference_chunk.square()))
+        residual_squared += float(torch.sum(residual_chunk.square()))
+        kernel_difference_squared += float(torch.sum(kernel_difference.square()))
+        direct_kernel_squared += float(torch.sum(direct_chunk.square()))
+        kernel_max_abs_difference = max(
+            kernel_max_abs_difference,
+            float(torch.max(torch.abs(kernel_difference))),
+        )
+    if dense_squared <= 0:
+        raise ValueError("Matrix-SVD residual is undefined for a zero tensor")
+    direct_residual = residual_squared / dense_squared
+    current_vs_direct = abs(current_tail - direct_residual)
+    stored_tail = float(stored_diagnostic_output_tail_squared)
+    current_vs_stored = abs(current_tail - stored_tail)
+    kernel_relative_difference = math.sqrt(kernel_difference_squared) / max(
+        math.sqrt(direct_kernel_squared), torch.finfo(torch.float64).tiny
+    )
+    residual_passed = current_vs_direct <= float(tolerance)
+    kernel_passed = (
+        kernel_max_abs_difference <= float(tolerance)
+        and kernel_relative_difference <= float(tolerance)
+    )
+    if not residual_passed:
+        raise AssertionError(
+            "Matrix-SVD direct residual does not match the current same-SVD tail"
+        )
+    if not kernel_passed:
+        raise AssertionError(
+            "Matrix-SVD composed kernel does not match the direct truncated SVD"
+        )
+    return {
+        "actual_relative_squared_frobenius_error": direct_residual,
+        "actual_relative_frobenius_error": math.sqrt(
+            max(direct_residual, 0.0)
+        ),
+        "current_output_mode_tail_bound_squared": current_tail,
+        "stored_diagnostic_output_mode_tail_bound_squared": stored_tail,
+        "current_vs_direct_residual_absolute_difference": current_vs_direct,
+        "current_vs_stored_output_tail_absolute_difference": current_vs_stored,
+        "matrix_svd_verification_tolerance": float(tolerance),
+        "matrix_svd_residual_verification_passed": residual_passed,
+        "matrix_svd_stored_tail_agreement_within_tolerance": (
+            current_vs_stored <= float(tolerance)
+        ),
+        "matrix_kernel_vs_direct_svd_max_abs_difference": (
+            kernel_max_abs_difference
+        ),
+        "matrix_kernel_vs_direct_svd_relative_frobenius_difference": (
+            kernel_relative_difference
+        ),
+        "matrix_kernel_verification_passed": kernel_passed,
+        "svd_computation_device": str(svd_computation_device),
+        "svd_computation_dtype": str(singular_values.dtype),
+        "residual_evaluation_precision": "float64",
+        "residual_evaluation_path": (
+            "cpu_float64_chunked_composed_kernel_vs_same_svd_tail_and_direct_svd"
+        ),
+    }
+
+
 def sha256_file(path):
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -366,6 +469,16 @@ def required_metric_fields(method):
             "final_factor_hash_sha256",
             "factor_artifact_sha256",
             "decomposition_runtime_seconds",
+        }
+    else:
+        common |= {
+            "current_output_mode_tail_bound_squared",
+            "stored_diagnostic_output_mode_tail_bound_squared",
+            "current_vs_direct_residual_absolute_difference",
+            "current_vs_stored_output_tail_absolute_difference",
+            "matrix_svd_verification_tolerance",
+            "matrix_kernel_vs_direct_svd_max_abs_difference",
+            "matrix_kernel_vs_direct_svd_relative_frobenius_difference",
         }
     return common
 

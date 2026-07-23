@@ -1,5 +1,8 @@
 import csv
+import importlib
+import importlib.metadata
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -8,7 +11,7 @@ import torch
 import torch.nn as nn
 
 from src.smallnet.experiment import run_final_structural
-from src.smallnet.factorization import factorized_conv_from_conv
+from src.smallnet.factorization import MatrixLowRankConv2d, factorized_conv_from_conv
 from src.smallnet.final_structural import (
     ActivationDistortionAccumulator,
     FINAL_CP_METHOD,
@@ -19,6 +22,7 @@ from src.smallnet.final_structural import (
     load_factor_artifact,
     normalize_final_structural_rows,
     save_factor_artifact,
+    verify_matrix_svd_reconstruction,
     verify_completed_row_schema,
     write_final_structural_audit,
     write_final_structural_figures,
@@ -65,10 +69,85 @@ def metric_row(method, rank, seed="", status="completed"):
                 "decomposition_runtime_seconds": 1.0,
             }
         )
+    else:
+        row.update(
+            {
+                "current_output_mode_tail_bound_squared": 0.8,
+                "stored_diagnostic_output_mode_tail_bound_squared": 0.81,
+                "current_vs_direct_residual_absolute_difference": 0.0,
+                "current_vs_stored_output_tail_absolute_difference": 0.01,
+                "matrix_svd_verification_tolerance": 1e-5,
+                "matrix_kernel_vs_direct_svd_max_abs_difference": 0.0,
+                "matrix_kernel_vs_direct_svd_relative_frobenius_difference": 0.0,
+            }
+        )
     return row
 
 
 class FinalStructuralMathTests(unittest.TestCase):
+    def test_same_svd_tail_passes_and_mismatched_legacy_tail_is_recorded(self):
+        singular_spectrum = torch.tensor([4.0, 3.0, 2.0, 1.0], dtype=torch.float64)
+        conv = nn.Conv2d(4, 4, kernel_size=1, bias=False).double()
+        conv.weight.data.copy_(torch.diag(singular_spectrum).reshape(4, 4, 1, 1))
+        matrix = conv.weight.detach().reshape(4, 4)
+        u, singular_values, vh = torch.linalg.svd(matrix, full_matrices=False)
+        replacement = MatrixLowRankConv2d.from_svd(
+            conv, 2, u, singular_values, vh
+        )
+        result = verify_matrix_svd_reconstruction(
+            conv.weight,
+            replacement,
+            u,
+            singular_values,
+            vh,
+            2,
+            stored_diagnostic_output_tail_squared=0.25,
+            tolerance=1e-5,
+            svd_computation_device="cpu",
+        )
+        expected_tail = float((2.0**2 + 1.0**2) / (4.0**2 + 3.0**2 + 2.0**2 + 1.0**2))
+        self.assertAlmostEqual(
+            result["actual_relative_squared_frobenius_error"],
+            expected_tail,
+            places=12,
+        )
+        self.assertAlmostEqual(
+            result["current_output_mode_tail_bound_squared"],
+            expected_tail,
+            places=15,
+        )
+        self.assertTrue(result["matrix_svd_residual_verification_passed"])
+        self.assertFalse(
+            result["matrix_svd_stored_tail_agreement_within_tolerance"]
+        )
+        self.assertAlmostEqual(
+            result["current_vs_stored_output_tail_absolute_difference"],
+            abs(expected_tail - 0.25),
+        )
+        self.assertEqual(result["residual_evaluation_precision"], "float64")
+        self.assertIn("cpu_float64", result["residual_evaluation_path"])
+
+    def test_incorrect_composed_kernel_is_rejected(self):
+        conv = nn.Conv2d(4, 4, kernel_size=1, bias=False)
+        matrix = torch.diag(torch.tensor([4.0, 3.0, 2.0, 1.0]))
+        conv.weight.data.copy_(matrix.reshape(4, 4, 1, 1))
+        u, singular_values, vh = torch.linalg.svd(matrix, full_matrices=False)
+        replacement = MatrixLowRankConv2d.from_svd(
+            conv, 2, u, singular_values, vh
+        )
+        replacement[0].weight.data[0, 0, 0, 0] += 0.1
+        with self.assertRaisesRegex(AssertionError, "does not match"):
+            verify_matrix_svd_reconstruction(
+                conv.weight,
+                replacement,
+                u,
+                singular_values,
+                vh,
+                2,
+                stored_diagnostic_output_tail_squared=1 / 6,
+                tolerance=1e-5,
+            )
+
     def test_200_iteration_protocol_is_explicit(self):
         self.assertEqual(
             final_structural_key(metric_row(FINAL_CP_METHOD, 128, 0)),
@@ -132,6 +211,21 @@ class FinalStructuralMathTests(unittest.TestCase):
 
 
 class FinalStructuralArtifactTests(unittest.TestCase):
+    def test_declared_tensorly_distributions_are_importable(self):
+        project = tomllib.loads(
+            (Path(__file__).parents[1] / "pyproject.toml").read_text()
+        )
+        dependency_names = {
+            requirement.split(">=", 1)[0].split("==", 1)[0]
+            for requirement in project["project"]["dependencies"]
+        }
+        self.assertIn("tensorly", dependency_names)
+        self.assertIn("tensorly-torch", dependency_names)
+        self.assertTrue(importlib.metadata.version("tensorly"))
+        self.assertTrue(importlib.metadata.version("tensorly-torch"))
+        self.assertIsNotNone(importlib.import_module("tensorly"))
+        self.assertIsNotNone(importlib.import_module("tltorch"))
+
     def test_factor_artifact_round_trip_and_hash_verification(self):
         conv = nn.Conv2d(3, 5, 3)
         fitted = factorized_conv_from_conv(
@@ -299,6 +393,59 @@ class FinalStructuralArtifactTests(unittest.TestCase):
                 handle.write(b"tamper")
             with self.assertRaisesRegex(RuntimeError, "file hash changed"):
                 run_final_structural(config, root, torch.device("cpu"))
+
+    def test_retry_failed_svd_skips_completed_cp_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "final"
+            config = {
+                "experiment_id": "svd-retry-test",
+                "output_dir": str(root / "preliminary"),
+                "final_structural": {
+                    "synthetic_tensor_shape": [5, 3, 3, 3],
+                    "ranks": [1],
+                    "seeds": [0],
+                    "iteration_budget": 200,
+                    "output_dir": str(output),
+                    "figures_dir": str(output / "figures"),
+                    "audit_path": str(output / "audit.md"),
+                },
+            }
+            run_final_structural(config, root, torch.device("cpu"))
+            summary = output / "final_structural_summary.csv"
+            rows = list(csv.DictReader(summary.open()))
+            cp_before = next(row for row in rows if row["method"] == FINAL_CP_METHOD)
+            svd = next(row for row in rows if row["method"] == FINAL_SVD_METHOD)
+            svd = {
+                "method": FINAL_SVD_METHOD,
+                "rank": svd["rank"],
+                "seed": "",
+                "iteration_budget": "",
+                "status": "failed",
+                "failure_exception": "legacy-tail mismatch",
+            }
+            from src.smallnet.results import write_csv
+
+            write_csv(summary, [cp_before, svd])
+            with mock.patch(
+                "src.smallnet.experiment.fit_cp_approximation_with_initialization_capture",
+                side_effect=AssertionError("completed CP row must be skipped"),
+            ):
+                run_final_structural(config, root, torch.device("cpu"))
+            retried = list(csv.DictReader(summary.open()))
+            cp_after = next(
+                row for row in retried if row["method"] == FINAL_CP_METHOD
+            )
+            svd_after = next(
+                row for row in retried if row["method"] == FINAL_SVD_METHOD
+            )
+            self.assertEqual(cp_after["factor_artifact_sha256"], cp_before["factor_artifact_sha256"])
+            self.assertEqual(cp_after["status"], "completed")
+            self.assertEqual(svd_after["status"], "completed")
+            self.assertTrue(
+                float(svd_after["current_vs_direct_residual_absolute_difference"])
+                <= float(svd_after["matrix_svd_verification_tolerance"])
+            )
 
 
 if __name__ == "__main__":
