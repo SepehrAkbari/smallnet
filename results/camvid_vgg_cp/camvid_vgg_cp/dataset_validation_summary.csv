@@ -1,0 +1,4 @@
+duplicate_key_count,image_count,inspected_mask_pixels,mask_count,matched_pair_count,missing_mask_count,split,status,unknown_rgb_count,unmatched_mask_count
+0,369,255052800,369,369,0,train,pass,0,0
+0,100,69120000,100,100,0,val,pass,0,0
+0,232,160358400,232,232,0,test,pass,175,0

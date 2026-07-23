@@ -1,0 +1,34 @@
+{
+  "schema": "smallnet.manifest.v1",
+  "environment": {
+    "created_utc": "2026-07-21T18:48:13.360527+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
+    "device": "cuda",
+    "device_name": "Tesla T4",
+    "git_commit": "5f68c3406584a8abc690e9cdb84a94c13481fcac",
+    "git_dirty": true
+  },
+  "kind": "structural_reconstruction_figure_regeneration",
+  "experiment_id": "camvid_vgg_cp_diagnostic_paper",
+  "source_reconstruction_summary": "/content/smallnet/results/camvid_vgg_cp/reconstruction_summary.csv",
+  "source_reconstruction_metadata": "/content/smallnet/results/camvid_vgg_cp/reconstruction_metadata.json",
+  "scientific_row_count": 4,
+  "preserved_raw_malformed_row_count": 0,
+  "row_normalization_diagnostics": [],
+  "figure_outputs": [
+    "/content/smallnet/results/paper/figures/figure_a_unfolding_cumulative_energy.csv",
+    "/content/smallnet/results/paper/figures/figure_a_unfolding_cumulative_energy.png",
+    "/content/smallnet/results/paper/figures/figure_a_unfolding_cumulative_energy.pdf",
+    "/content/smallnet/results/paper/figures/figure_b_reconstruction_squared_error.csv",
+    "/content/smallnet/results/paper/figures/figure_b_reconstruction_squared_error.png",
+    "/content/smallnet/results/paper/figures/figure_b_reconstruction_squared_error.pdf"
+  ],
+  "figure_generation_failures": [],
+  "figure_generation_failure_policy": "Figure-only failures are recorded as nonfatal diagnostics."
+}
