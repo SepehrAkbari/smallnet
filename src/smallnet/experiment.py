@@ -7,6 +7,7 @@ import gc
 import importlib.metadata
 import json
 import resource
+from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
 
@@ -66,6 +67,19 @@ from src.smallnet.cp_iteration_sensitivity import (
     write_cp_iteration_sensitivity_audit,
     write_cp_iteration_sensitivity_figure,
 )
+from src.smallnet.rank512_stability import (
+    FLOAT64_PRECISION,
+    PRIMARY_PRECISION,
+    STABILITY_METHOD,
+    aggregate_rank512_stability_rows,
+    captured_shared_initialization,
+    fit_rank512_stability_row,
+    normalize_rank512_stability_rows,
+    scientific_rank512_stability_key,
+    tensor_sha256,
+    write_rank512_stability_audit,
+    write_rank512_stability_figure,
+)
 
 
 def resolve_path(path, root):
@@ -117,6 +131,10 @@ def reconstruction_config(config):
 
 def cp_iteration_sensitivity_config(config):
     return config.get("cp_iteration_sensitivity", {})
+
+
+def rank512_stability_config(config):
+    return config.get("rank512_stability", {})
 
 
 def existing_finetuned_config(config):
@@ -1472,6 +1490,563 @@ def run_cp_iteration_sensitivity(config, root, device, max_batches=None):
     if conv is not None:
         del conv
     gc.collect()
+    return metadata_path
+
+
+def _rank512_stability_protocol_keys(stability_cfg):
+    rank = int(stability_cfg.get("rank", 512))
+    seeds = [int(value) for value in stability_cfg.get("seeds", [0, 1, 2])]
+    budgets = [
+        int(value)
+        for value in stability_cfg.get(
+            "iteration_budgets", [150, 200, 250, 300, 350, 400, 500, 600, 800]
+        )
+    ]
+    primary_repetitions = [
+        int(value) for value in stability_cfg.get("primary_repetitions", [0])
+    ]
+    repeatability_budgets = [
+        int(value) for value in stability_cfg.get("repeatability_budgets", [200, 400])
+    ]
+    repeatability_repetitions = [
+        int(value) for value in stability_cfg.get("repeatability_repetitions", [0, 1])
+    ]
+    float64_seeds = [int(value) for value in stability_cfg.get("float64_seeds", [0, 1])]
+    float64_budgets = [
+        int(value) for value in stability_cfg.get("float64_iteration_budgets", [200, 400])
+    ]
+    float64_repetitions = [
+        int(value) for value in stability_cfg.get("float64_repetitions", [0])
+    ]
+    primary = {
+        (STABILITY_METHOD, rank, seed, budget, repetition, PRIMARY_PRECISION)
+        for seed in seeds
+        for budget in budgets
+        for repetition in primary_repetitions
+    }
+    primary.update(
+        {
+            (STABILITY_METHOD, rank, seed, budget, repetition, PRIMARY_PRECISION)
+            for seed in seeds
+            for budget in repeatability_budgets
+            for repetition in repeatability_repetitions
+        }
+    )
+    float64 = {
+        (STABILITY_METHOD, rank, seed, budget, repetition, FLOAT64_PRECISION)
+        for seed in float64_seeds
+        for budget in float64_budgets
+        for repetition in float64_repetitions
+    }
+    return {
+        "rank": rank,
+        "seeds": seeds,
+        "budgets": budgets,
+        "primary_keys": primary,
+        "float64_keys": float64,
+        "all_keys": primary | float64,
+    }
+
+
+def run_rank512_stability(config, root, device, max_batches=None):
+    '''Run the isolated repeated rank-512 numerical-stability diagnostic.'''
+    stability_cfg = rank512_stability_config(config)
+    synthetic = bool(stability_cfg.get("synthetic_tensor_shape"))
+    if not synthetic and torch.device(device).type != "cuda":
+        raise RuntimeError(
+            "The canonical rank-512 stability diagnostic requires CUDA; CPU and MPS are not substitutes"
+        )
+    protocol = _rank512_stability_protocol_keys(stability_cfg)
+    if protocol["rank"] <= 0:
+        raise ValueError("rank512_stability.rank must be positive")
+    if protocol["budgets"] != sorted(set(protocol["budgets"])):
+        raise ValueError("rank512 stability iteration budgets must be unique and increasing")
+    canonical_output_dir = experiment_output_dir(config, root)
+    output_dir = ensure_dir(
+        resolve_path(
+            stability_cfg.get(
+                "output_dir", "results/camvid_vgg_cp/rank512_stability"
+            ),
+            root,
+        )
+    )
+    save_config_snapshot(output_dir / "rank512_stability_config_used.json", config)
+    summary_path = output_dir / "rank512_stability_summary.csv"
+    raw_loaded = _read_cp_iteration_rows(summary_path) if summary_path.is_file() else []
+    normalized_loaded, preserved_raw_rows, row_diagnostics = normalize_rank512_stability_rows(
+        raw_loaded, context="incremental rank-512 stability CSV load"
+    )
+    persisted_rows = {scientific_rank512_stability_key(row): row for row in normalized_loaded}
+    completed_keys = {
+        key for key, row in persisted_rows.items() if row.get("status") == "completed"
+    }
+    explicit_execution = any(
+        name in stability_cfg
+        for name in (
+            "execution_seeds",
+            "execution_iteration_budgets",
+            "execution_repetitions",
+            "execution_optimization_precisions",
+        )
+    )
+    if explicit_execution:
+        execution_seeds = [
+            int(value) for value in stability_cfg.get("execution_seeds", protocol["seeds"])
+        ]
+        execution_budgets = [
+            int(value)
+            for value in stability_cfg.get(
+                "execution_iteration_budgets", protocol["budgets"]
+            )
+        ]
+        execution_repetitions = [
+            int(value) for value in stability_cfg.get("execution_repetitions", [0])
+        ]
+        execution_precisions = [
+            str(value).lower()
+            for value in stability_cfg.get(
+                "execution_optimization_precisions", [PRIMARY_PRECISION]
+            )
+        ]
+        requested_keys = {
+            (STABILITY_METHOD, protocol["rank"], seed, budget, repetition, precision)
+            for seed in execution_seeds
+            for budget in execution_budgets
+            for repetition in execution_repetitions
+            for precision in execution_precisions
+        }
+        invalid = requested_keys - protocol["all_keys"]
+        if invalid and not bool(stability_cfg.get("allow_noncanonical_execution_keys", False)):
+            raise ValueError(f"Requested stability keys are outside the configured protocol: {sorted(invalid)}")
+    else:
+        requested_keys = set(protocol["all_keys"])
+    expected_initialization_hashes = {}
+    expected_shared_initialization_hashes = {}
+    for row in normalized_loaded:
+        if row.get("status") != "completed":
+            continue
+        value = str(row.get("initialization_hash_sha256", "")).strip()
+        actual_value = str(row.get("actual_fit_initialization_hash_sha256", "")).strip()
+        shared_value = str(
+            row.get("shared_float32_initialization_hash_sha256", "")
+        ).strip()
+        if not value:
+            raise RuntimeError("Completed stability row lacks an initialization hash")
+        if not actual_value or actual_value != value:
+            raise RuntimeError("Completed stability row has an inconsistent actual initialization hash")
+        if not shared_value:
+            raise RuntimeError("Completed stability row lacks the shared float32 initialization hash")
+        key = (int(row["seed"]), row["optimization_precision"])
+        previous = expected_initialization_hashes.setdefault(key, value)
+        if previous != value:
+            raise RuntimeError(
+                f"Inconsistent saved initialization hashes for seed/precision {key}: {previous} != {value}"
+            )
+        shared_previous = expected_shared_initialization_hashes.setdefault(
+            int(row["seed"]), shared_value
+        )
+        if shared_previous != shared_value:
+            raise RuntimeError(
+                f"Inconsistent shared initialization hashes for seed {row['seed']}: "
+                f"{shared_previous} != {shared_value}"
+            )
+
+    def persist(new_rows):
+        normalized_new, rejected_new, diagnostics = normalize_rank512_stability_rows(
+            new_rows, context="incremental rank-512 stability append"
+        )
+        row_diagnostics.extend(diagnostics)
+        preserved_raw_rows.extend(rejected_new)
+        for row in normalized_new:
+            key = scientific_rank512_stability_key(row)
+            previous = persisted_rows.get(key)
+            if previous and previous.get("status") == "completed" and row.get("status") != "completed":
+                continue
+            persisted_rows[key] = row
+        write_csv(summary_path, [*persisted_rows.values(), *preserved_raw_rows])
+
+    reference_rows = []
+    canonical_summary = canonical_output_dir / "cp_iteration_sensitivity_summary.csv"
+    if canonical_summary.is_file():
+        with open(canonical_summary, newline="") as handle:
+            reference_rows = list(csv.DictReader(handle))
+    canonical_rank_rows = [
+        row
+        for row in reference_rows
+        if str(row.get("rank")) == str(protocol["rank"])
+        and row.get("status") == "completed"
+    ]
+    if not synthetic and not canonical_rank_rows:
+        raise FileNotFoundError(
+            "Completed canonical rank-512 sensitivity rows are required for identity checks"
+        )
+    canonical_checkpoint_hashes = {
+        row.get("checkpoint_sha256", "") for row in canonical_rank_rows if row.get("checkpoint_sha256")
+    }
+    if len(canonical_checkpoint_hashes) > 1:
+        raise RuntimeError("Canonical rank-512 sensitivity rows contain multiple checkpoint hashes")
+    canonical_initialization_hashes = {}
+    for reference_row in canonical_rank_rows:
+        seed = int(reference_row["seed"])
+        value = str(reference_row.get("initialization_hash_sha256", "")).strip()
+        if not value:
+            raise RuntimeError("Canonical rank-512 sensitivity row lacks an initialization hash")
+        previous = canonical_initialization_hashes.setdefault(seed, value)
+        if previous != value:
+            raise RuntimeError(
+                f"Canonical rank-512 sensitivity initialization changed for seed {seed}"
+            )
+
+    if requested_keys - completed_keys:
+        if synthetic:
+            cout, cin, kh, kw = map(int, stability_cfg["synthetic_tensor_shape"])
+            set_seed(int(stability_cfg.get("synthetic_seed", 123)), deterministic=True)
+            conv = nn.Conv2d(
+                cin,
+                cout,
+                (kh, kw),
+                bias=bool(stability_cfg.get("synthetic_bias", True)),
+            )
+            checkpoint_hash = "synthetic"
+            max_bound = float(stability_cfg.get("synthetic_max_unfolding_tail_bound_squared", 0.0))
+            output_svd = float(stability_cfg.get("synthetic_output_mode_svd_residual_squared", 0.0))
+        else:
+            conv = _reconstruction_conv(config, root)
+            checkpoint_hash = sha256_file(dense_checkpoint_path(config, root))
+            if canonical_checkpoint_hashes and checkpoint_hash not in canonical_checkpoint_hashes:
+                raise RuntimeError("Dense checkpoint hash differs from canonical sensitivity rows")
+            reference = canonical_rank_rows[0]
+            max_bound = float(reference["max_unfolding_tail_bound_squared"])
+            output_svd = float(reference["output_mode_svd_residual_squared"])
+        reference_weight = conv.weight.detach().cpu().clone()
+        target_hash = tensor_sha256(reference_weight)
+        previous_metadata_path = output_dir / "rank512_stability_metadata.json"
+        if previous_metadata_path.is_file():
+            previous_target_hash = load_manifest(previous_metadata_path).get(
+                "target_tensor_sha256", ""
+            )
+            if previous_target_hash and previous_target_hash != target_hash:
+                raise RuntimeError("Target tensor hash changed during a resumed stability diagnostic")
+        thresholds = stability_cfg.get("diagnostic_thresholds", {})
+        thresholds = {
+            **thresholds,
+            "residual_output_chunk_size": int(
+                stability_cfg.get("residual_output_chunk_size", 8)
+            ),
+        }
+        software_versions_json = json.dumps(_software_versions(), sort_keys=True)
+        init = stability_cfg.get(
+            "init", reconstruction_config(config).get("init", cp_config(config).get("init", "random"))
+        )
+        recon_cfg = reconstruction_config(config)
+        tolerance = float(
+            stability_cfg.get("numerical_tolerance", recon_cfg.get("numerical_tolerance", 1e-5))
+        )
+        memory_efficient = bool(
+            stability_cfg.get(
+                "memory_efficient_mttkrp", recon_cfg.get("memory_efficient_mttkrp", True)
+            )
+        )
+        chunk_size = int(
+            stability_cfg.get(
+                "mttkrp_rank_chunk_size", recon_cfg.get("mttkrp_rank_chunk_size", 64)
+            )
+        )
+        max_explicit = int(
+            stability_cfg.get(
+                "mttkrp_max_explicit_bytes",
+                recon_cfg.get("mttkrp_max_explicit_bytes", 512 * 1024**2),
+            )
+        )
+        new_rows = []
+        for key in sorted(
+            requested_keys - completed_keys,
+            key=lambda value: (value[5], value[2], value[3], value[4]),
+        ):
+            _, rank, seed, budget, repetition, precision = key
+            try:
+                row = fit_rank512_stability_row(
+                    conv,
+                    reference_weight,
+                    rank=rank,
+                    seed=seed,
+                    budget=budget,
+                    repetition=repetition,
+                    optimization_precision=precision,
+                    init=init,
+                    device=device,
+                    checkpoint_hash=checkpoint_hash,
+                    target_tensor_hash=target_hash,
+                    max_unfolding_tail_bound_squared=max_bound,
+                    output_mode_svd_residual_squared=output_svd,
+                    tolerance=tolerance,
+                    memory_efficient_mttkrp=memory_efficient,
+                    mttkrp_rank_chunk_size=chunk_size,
+                    mttkrp_max_explicit_bytes=max_explicit,
+                    expected_initialization_hash=expected_initialization_hashes.get(
+                        (seed, precision)
+                    ),
+                    expected_shared_initialization_hash=(
+                        expected_shared_initialization_hashes.get(seed)
+                    ),
+                    thresholds=thresholds,
+                )
+                if row.get("status") == "completed":
+                    expected_initialization_hashes.setdefault(
+                        (seed, precision), row["initialization_hash_sha256"]
+                    )
+                    expected_shared_initialization_hashes.setdefault(
+                        seed, row["shared_float32_initialization_hash_sha256"]
+                    )
+                row["software_versions_json"] = software_versions_json
+                canonical_initialization_hash = canonical_initialization_hashes.get(seed)
+                if canonical_initialization_hash:
+                    row["canonical_sensitivity_initialization_hash_sha256"] = (
+                        canonical_initialization_hash
+                    )
+                    row["shared_initialization_matches_canonical_sensitivity"] = (
+                        row["shared_float32_initialization_hash_sha256"]
+                        == canonical_initialization_hash
+                    )
+                    if not row["shared_initialization_matches_canonical_sensitivity"]:
+                        raise AssertionError(
+                            f"Diagnostic initialization for seed {seed} differs from the "
+                            "canonical sensitivity experiment"
+                        )
+                matching = [
+                    item
+                    for item in canonical_rank_rows
+                    if str(item.get("seed")) == str(seed)
+                    and str(item.get("iteration_budget")) == str(budget)
+                ]
+                if matching:
+                    canonical_residual = float(
+                        matching[0]["actual_relative_squared_frobenius_error"]
+                    )
+                    row["canonical_sensitivity_squared_residual"] = canonical_residual
+                    row["absolute_difference_from_canonical_sensitivity_residual"] = abs(
+                        float(row["actual_relative_squared_frobenius_error"])
+                        - canonical_residual
+                    )
+                    row["canonical_sensitivity_residual_reproduced_within_tolerance"] = (
+                        row["absolute_difference_from_canonical_sensitivity_residual"]
+                        <= tolerance
+                    )
+                new_rows.append(row)
+            except Exception as exc:
+                failure_initialization = {}
+                try:
+                    components, shared_hash, precision_hash = captured_shared_initialization(
+                        conv,
+                        rank,
+                        seed,
+                        init,
+                        device,
+                        precision,
+                        memory_efficient_mttkrp=memory_efficient,
+                        mttkrp_rank_chunk_size=chunk_size,
+                        mttkrp_max_explicit_bytes=max_explicit,
+                    )
+                    failure_initialization = {
+                        "initialization_hash_sha256": precision_hash,
+                        "shared_float32_initialization_hash_sha256": shared_hash,
+                        "actual_fit_initialization_hash_sha256": "",
+                        "actual_fit_initialization_hash_available": False,
+                        "initialization_replay_protocol": (
+                            "shared_float32_factors_independently_replayed"
+                        ),
+                    }
+                    del components
+                except Exception as initialization_exc:
+                    failure_initialization = {
+                        "initialization_hash_sha256": "",
+                        "shared_float32_initialization_hash_sha256": "",
+                        "actual_fit_initialization_hash_sha256": "",
+                        "actual_fit_initialization_hash_available": False,
+                        "initialization_diagnostic_exception": repr(initialization_exc),
+                    }
+                new_rows.append(
+                    {
+                        "method": STABILITY_METHOD,
+                        "rank": rank,
+                        "seed": seed,
+                        "iteration_budget": budget,
+                        "repetition": repetition,
+                        "optimization_precision": precision,
+                        "status": "failed",
+                        "completed_requested_budget": False,
+                        "failure_exception": repr(exc),
+                        "device": torch.device(device).type,
+                        "optimization_dtype": precision,
+                        "initializer": init,
+                        "dense_tensor_shape": "x".join(map(str, reference_weight.shape)),
+                        "checkpoint_sha256": checkpoint_hash,
+                        "target_tensor_sha256": target_hash,
+                        "software_versions_json": software_versions_json,
+                        **failure_initialization,
+                    }
+                )
+            persist(new_rows)
+        del reference_weight, conv
+        gc.collect()
+    else:
+        checkpoint_hash = "synthetic" if synthetic else sha256_file(dense_checkpoint_path(config, root))
+        metadata_path = output_dir / "rank512_stability_metadata.json"
+        previous = load_manifest(metadata_path) if metadata_path.is_file() else {}
+        target_hash = previous.get("target_tensor_sha256", "")
+        tolerance = float(
+            stability_cfg.get(
+                "numerical_tolerance",
+                reconstruction_config(config).get("numerical_tolerance", 1e-5),
+            )
+        )
+
+    final_rows = [*persisted_rows.values(), *preserved_raw_rows]
+    write_csv(summary_path, final_rows)
+    aggregates, seed_summaries, aggregate_diagnostics = aggregate_rank512_stability_rows(
+        final_rows, tolerance=tolerance
+    )
+    row_diagnostics.extend(aggregate_diagnostics)
+    aggregates_path = write_csv(output_dir / "rank512_stability_aggregates.csv", aggregates)
+    normalized_final, _, _ = normalize_rank512_stability_rows(final_rows, warn=False)
+    failures = [
+        {
+            "rank": row.get("rank"),
+            "seed": row.get("seed"),
+            "iteration_budget": row.get("iteration_budget"),
+            "repetition": row.get("repetition"),
+            "optimization_precision": row.get("optimization_precision"),
+            "exception": row.get("failure_exception", ""),
+        }
+        for row in normalized_final
+        if row.get("status") != "completed"
+    ]
+    initialization_groups = defaultdict(set)
+    for row in normalized_final:
+        if row.get("status") == "completed":
+            initialization_groups[(int(row["seed"]), row["optimization_precision"])].add(
+                row["initialization_hash_sha256"]
+            )
+    inconsistent = {
+        key: sorted(values) for key, values in initialization_groups.items() if len(values) != 1
+    }
+    if inconsistent:
+        raise RuntimeError(f"Initialization identity failed across budgets/repetitions: {inconsistent}")
+    shared_initialization_groups = defaultdict(set)
+    for row in normalized_final:
+        if row.get("status") == "completed":
+            shared_initialization_groups[int(row["seed"])].add(
+                row["shared_float32_initialization_hash_sha256"]
+            )
+    inconsistent_shared = {
+        key: sorted(values)
+        for key, values in shared_initialization_groups.items()
+        if len(values) != 1
+    }
+    if inconsistent_shared:
+        raise RuntimeError(
+            "Shared float32 initialization identity failed across precision/budget/repetition: "
+            f"{inconsistent_shared}"
+        )
+    figures = []
+    figure_failures = []
+    try:
+        figures, diagnostics = write_rank512_stability_figure(
+            final_rows,
+            resolve_path(
+                stability_cfg.get("figures_dir", "results/paper/figures"), root
+            ),
+        )
+        row_diagnostics.extend(diagnostics)
+    except Exception as exc:
+        figure_failures.append(
+            {"figure": "rank512_stability", "exception": repr(exc), "nonfatal": True}
+        )
+    audit_outputs = []
+    audit_failures = []
+    audit_path = resolve_path(
+        stability_cfg.get("audit_path", "results/paper/rank512_stability_audit.md"),
+        root,
+    )
+    try:
+        audit_output, audit_complete = write_rank512_stability_audit(
+            final_rows,
+            aggregates,
+            audit_path,
+            budgets=protocol["budgets"],
+            seeds=protocol["seeds"],
+            tolerance=tolerance,
+            expected_primary_keys=protocol["primary_keys"],
+            expected_float64_keys=protocol["float64_keys"],
+            failures=failures,
+            repeatability_budgets=stability_cfg.get(
+                "repeatability_budgets", [200, 400]
+            ),
+        )
+        audit_outputs.append(audit_output)
+    except Exception as exc:
+        audit_complete = False
+        audit_failures.append(
+            {"artifact": "rank512_stability_audit", "exception": repr(exc), "nonfatal": True}
+        )
+    metadata_path = save_manifest(
+        output_dir / "rank512_stability_metadata.json",
+        {
+            "kind": "rank512_cp_numerical_stability_diagnostic",
+            "experiment_id": config.get("experiment_id"),
+            "rank": protocol["rank"],
+            "canonical_seeds": protocol["seeds"],
+            "canonical_iteration_budgets": protocol["budgets"],
+            "expected_primary_scientific_keys": [list(key) for key in sorted(protocol["primary_keys"])],
+            "expected_float64_scientific_keys": [list(key) for key in sorted(protocol["float64_keys"])],
+            "requested_scientific_keys": [list(key) for key in sorted(requested_keys)],
+            "checkpoint_sha256": checkpoint_hash,
+            "target_tensor_sha256": target_hash,
+            "target_layer": model_config(config).get("target_layer", "classifier.0"),
+            "canonical_target_identity_validation": (
+                "Checkpoint hash, target layer, tensor shape, and the recorded target-tensor hash are fixed. "
+                "The older canonical sensitivity metadata did not store a target-tensor byte hash."
+            ),
+            "initialization_identity_by_seed_and_precision": [
+                {
+                    "seed": seed,
+                    "optimization_precision": precision,
+                    "hashes": sorted(values),
+                    "identical": len(values) == 1,
+                }
+                for (seed, precision), values in sorted(initialization_groups.items())
+            ],
+            "shared_initialization_identity_by_seed": [
+                {
+                    "seed": seed,
+                    "hashes": sorted(values),
+                    "identical_across_precision_budget_and_repetition": len(values) == 1,
+                }
+                for seed, values in sorted(shared_initialization_groups.items())
+            ],
+            "residual_verification_protocol": (
+                "Float64 accumulation compares tltorch weight.to_tensor() against an independent, "
+                "output-channel-chunked manual CP contraction."
+            ),
+            "float64_protocol_note": (
+                "Float32 optimization rows are always evaluated in float64. The separately labeled float64 "
+                "rows attempt full float64 optimization; failures are retained rather than replaced by CPU or MPS."
+            ),
+            "software_versions": _software_versions(),
+            "aggregates": aggregates,
+            "failures": failures,
+            "row_normalization_diagnostics": row_diagnostics,
+            "figure_outputs": figures,
+            "figure_generation_failures": figure_failures,
+            "audit_outputs": audit_outputs,
+            "audit_complete": audit_complete,
+            "audit_generation_failures": audit_failures,
+            "summary_path": str(summary_path),
+            "aggregates_path": str(aggregates_path),
+            "peak_process_resident_memory_raw_ru_maxrss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        },
+        device=device,
+    )
     return metadata_path
 
 

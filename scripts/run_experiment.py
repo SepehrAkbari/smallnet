@@ -23,6 +23,7 @@ from src.smallnet.experiment import (
     run_existing_finetuned_evaluation,
     run_profiling,
     run_rank_diagnostics,
+    run_rank512_stability,
     run_reconstruction,
     run_reconstruction_figures,
     run_structural_zero_shot,
@@ -41,6 +42,7 @@ STAGES = {
     "reconstruction": [run_reconstruction],
     "reconstruction-figures": [run_reconstruction_figures],
     "cp-iteration-sensitivity": [run_cp_iteration_sensitivity],
+    "rank512-stability": [run_rank512_stability],
     "structural-zero-shot": [run_structural_zero_shot],
     "full": [
         run_dense_evaluation,
@@ -73,6 +75,18 @@ def parse_args():
         type=int,
         help="Optional CP iteration-budget subset for the sensitivity stage.",
     )
+    parser.add_argument(
+        "--repetitions",
+        nargs="+",
+        type=int,
+        help="Optional repetition subset for the rank-512 stability stage.",
+    )
+    parser.add_argument(
+        "--optimization-precisions",
+        nargs="+",
+        choices=("float32", "float64"),
+        help="Optional optimization-precision subset for the rank-512 stability stage.",
+    )
     return parser.parse_args()
 
 
@@ -81,26 +95,46 @@ def main():
     config = load_config(args.config)
     if args.output_dir:
         config["output_dir"] = args.output_dir
-    subset_section = (
-        "cp_iteration_sensitivity"
-        if args.stage == "cp-iteration-sensitivity"
-        else "reconstruction"
-    )
+    subset_section = {
+        "cp-iteration-sensitivity": "cp_iteration_sensitivity",
+        "rank512-stability": "rank512_stability",
+    }.get(args.stage, "reconstruction")
     if args.ranks:
+        if args.stage == "rank512-stability" and args.ranks != [512]:
+            raise ValueError("The rank512-stability protocol accepts only --ranks 512")
         config.setdefault(subset_section, {})["execution_ranks"] = args.ranks
     if args.seeds:
         config.setdefault(subset_section, {})["execution_seeds"] = args.seeds
     if args.iteration_budgets:
-        if args.stage != "cp-iteration-sensitivity":
-            raise ValueError("--iteration-budgets is supported only with --stage cp-iteration-sensitivity")
-        config.setdefault("cp_iteration_sensitivity", {})[
+        if args.stage not in {"cp-iteration-sensitivity", "rank512-stability"}:
+            raise ValueError(
+                "--iteration-budgets is supported only with --stage "
+                "cp-iteration-sensitivity or rank512-stability"
+            )
+        config.setdefault(subset_section, {})[
             "execution_iteration_budgets"
         ] = args.iteration_budgets
+    if args.repetitions:
+        if args.stage != "rank512-stability":
+            raise ValueError("--repetitions is supported only with --stage rank512-stability")
+        config.setdefault("rank512_stability", {})["execution_repetitions"] = args.repetitions
+    if args.optimization_precisions:
+        if args.stage != "rank512-stability":
+            raise ValueError(
+                "--optimization-precisions is supported only with --stage rank512-stability"
+            )
+        config.setdefault("rank512_stability", {})[
+            "execution_optimization_precisions"
+        ] = args.optimization_precisions
     if args.synthetic_smoke:
-        if args.stage not in {"reconstruction", "cp-iteration-sensitivity"}:
+        if args.stage not in {
+            "reconstruction",
+            "cp-iteration-sensitivity",
+            "rank512-stability",
+        }:
             raise ValueError(
                 "--synthetic-smoke is supported only with --stage reconstruction or "
-                "cp-iteration-sensitivity"
+                "cp-iteration-sensitivity, or rank512-stability"
             )
         if args.stage == "reconstruction":
             if not args.output_dir:
@@ -113,7 +147,7 @@ def main():
                     "seeds": [0, 1, 2],
                 }
             )
-        else:
+        elif args.stage == "cp-iteration-sensitivity":
             if not args.output_dir:
                 config["output_dir"] = (
                     "results/camvid_vgg_cp/synthetic_cp_iteration_sensitivity_smoke"
@@ -126,6 +160,27 @@ def main():
                     "seeds": [0, 1, 2],
                     "iteration_budgets": [1, 2, 3, 4],
                     "audit_path": f"{config['output_dir']}/cp_iteration_sensitivity_audit.md",
+                }
+            )
+        else:
+            if not args.output_dir:
+                config["output_dir"] = "results/camvid_vgg_cp/synthetic_rank512_stability_smoke"
+            config.setdefault("rank512_stability", {}).update(
+                {
+                    "synthetic_tensor_shape": [8, 6, 3, 3],
+                    "synthetic_seed": 123,
+                    "rank": 4,
+                    "seeds": [0, 1],
+                    "iteration_budgets": [1, 2, 3, 4],
+                    "primary_repetitions": [0],
+                    "repeatability_budgets": [2, 4],
+                    "repeatability_repetitions": [0, 1],
+                    "float64_seeds": [0],
+                    "float64_iteration_budgets": [2, 4],
+                    "float64_repetitions": [0],
+                    "output_dir": config["output_dir"],
+                    "figures_dir": f"{config['output_dir']}/figures",
+                    "audit_path": f"{config['output_dir']}/rank512_stability_audit.md",
                 }
             )
         config.setdefault("paper", {})["figures_dir"] = f"{config['output_dir']}/figures"

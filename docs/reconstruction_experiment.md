@@ -182,6 +182,49 @@ Sensitivity outputs are distinct from the canonical ten-iteration table:
 
 The transition table reports every adjacent pair in the configured increasing grid. The stopping decision always uses the highest two complete canonical budgets; for the current grid these are 200 and 400. An 800-iteration check is recommended only when at least one rank has an absolute mean squared-residual reduction of at least `1e-3` from 200 to 400. Completion means the requested budget ran; it does not certify optimization convergence.
 
+## Rank-512 numerical-stability diagnostic
+
+The isolated `rank512-stability` stage investigates the non-monotone rank-512 ALS residual without changing the canonical reconstruction, zero-shot, or six-budget sensitivity artifacts. Its float32 grid uses budgets 150, 200, 250, 300, 350, 400, 500, 600, and 800 for seeds 0, 1, and 2. Budgets 200 and 400 have repetitions 0 and 1. The labeled float64 subset attempts seeds 0 and 1 at budgets 200 and 400; failure of full float64 optimization is retained, while every float32 fit is still reconstructed and evaluated in float64.
+
+Every independent fit replays values from a captured float32 zero-iteration initializer. The shared initializer hash must agree across budgets, repetitions, and optimization precisions for a seed; a precision-specific hash must also agree with the initialization captured inside the actual ALS call. No shorter fit is used as a warm start.
+
+Run the local synthetic protocol with:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage rank512-stability \
+  --device cpu \
+  --synthetic-smoke
+```
+
+Run or resume a single CUDA scientific key with, for example:
+
+```bash
+uv run python scripts/run_experiment.py \
+  --config configs/camvid_vgg_cp_paper.json \
+  --stage rank512-stability \
+  --device cuda \
+  --ranks 512 \
+  --seeds 0 \
+  --iteration-budgets 200 \
+  --repetitions 1 \
+  --optimization-precisions float32
+```
+
+Completed keys are skipped and missing or failed keys are retried. A row is persisted immediately after its fit, with the scientific key `(method, rank, seed, iteration_budget, repetition, optimization_precision)`. Figures and the audit are regenerated from all saved rows after each invocation, so partial results remain inspectable. The outputs are:
+
+- `results/camvid_vgg_cp/rank512_stability/rank512_stability_summary.csv`
+- `results/camvid_vgg_cp/rank512_stability/rank512_stability_aggregates.csv`
+- `results/camvid_vgg_cp/rank512_stability/rank512_stability_metadata.json`
+- `results/camvid_vgg_cp/rank512_stability/rank512_stability_config_used.json`
+- `results/paper/rank512_stability_audit.md`
+- `results/paper/figures/rank512_stability.csv`
+- `results/paper/figures/rank512_stability.pdf`
+- `results/paper/figures/rank512_stability.png`
+
+The residual is recomputed with float64 accumulation from both the fitted tensor and an independent output-channel-chunked CP contraction. Factor norms, per-component scaling spreads, component contribution norms, cancellation indicators, finite checks, final-factor hashes, tensor norms, and reconstruction-path agreement are recorded. “Completed requested budget” is not a convergence claim, and the audit does not adopt a best-observed-residual rule.
+
 ## Outputs
 
 Canonical reconstruction artifacts:

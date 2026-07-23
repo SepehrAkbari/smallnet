@@ -75,6 +75,33 @@
     "numerical_tolerance": 1e-5,
     "audit_path": "results/paper/cp_iteration_sensitivity_audit.md"
   },
+  "rank512_stability": {
+    "rank": 512,
+    "seeds": [0, 1, 2],
+    "iteration_budgets": [150, 200, 250, 300, 350, 400, 500, 600, 800],
+    "primary_repetitions": [0],
+    "repeatability_budgets": [200, 400],
+    "repeatability_repetitions": [0, 1],
+    "float64_seeds": [0, 1],
+    "float64_iteration_budgets": [200, 400],
+    "float64_repetitions": [0],
+    "init": "random",
+    "memory_efficient_mttkrp": true,
+    "mttkrp_rank_chunk_size": 64,
+    "mttkrp_max_explicit_bytes": 536870912,
+    "numerical_tolerance": 1e-5,
+    "residual_output_chunk_size": 8,
+    "diagnostic_thresholds": {
+      "near_zero_component_norm_threshold": 1e-12,
+      "extreme_factor_norm_threshold": 1000000.0,
+      "scaling_spread_threshold": 1000000.0,
+      "cancellation_ratio_threshold": 1000.0,
+      "bounded_reconstruction_multiple": 10.0
+    },
+    "output_dir": "results/camvid_vgg_cp/rank512_stability",
+    "figures_dir": "results/paper/figures",
+    "audit_path": "results/paper/rank512_stability_audit.md"
+  },
   "existing_finetuned_checkpoints": {
     "64": "model/finetuned_rank_64.pth",
     "128": "model/finetuned_rank_128.pth",
