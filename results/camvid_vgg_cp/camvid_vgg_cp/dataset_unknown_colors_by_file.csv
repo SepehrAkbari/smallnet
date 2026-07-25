@@ -1,0 +1,2 @@
+mask_path,total_unknown_pixels,distinct_unknown_rgb_values,bounding_box_ymin_xmin_ymax_xmax,affected_proportion,connected_region_count_4_neighbor,all_unknown_pixels_in_one_connected_region,connected_region_sizes
+/content/smallnet/data/CamVid/test_labels/Seq05VD_f02610_L.png,175,55,"2,305,177,494",0.00025318287037037036,25,False,"41,41,12,12,11,8,7,7,7,4,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1"

@@ -1,0 +1,564 @@
+{
+  "schema": "smallnet.manifest.v1",
+  "environment": {
+    "created_utc": "2026-07-23T15:31:04.144385+00:00",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.12.0+cu130",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": 92000,
+    "mps_available": false,
+    "device": "cuda",
+    "device_name": "Tesla T4",
+    "git_commit": "5eff89757ab50f76565de2d27f1ad1b4f1dbebe4",
+    "git_dirty": true
+  },
+  "kind": "rank512_cp_numerical_stability_diagnostic",
+  "experiment_id": "camvid_vgg_cp_diagnostic_paper",
+  "rank": 512,
+  "canonical_seeds": [
+    0,
+    1,
+    2
+  ],
+  "canonical_iteration_budgets": [
+    150,
+    200,
+    250,
+    300,
+    350,
+    400,
+    500,
+    600,
+    800
+  ],
+  "expected_primary_scientific_keys": [
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      150,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      250,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      300,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      350,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      400,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      500,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      600,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      800,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      150,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      250,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      300,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      350,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      400,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      500,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      600,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      800,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      150,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      250,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      300,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      350,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      400,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      500,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      600,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      800,
+      0,
+      "float32"
+    ]
+  ],
+  "expected_float64_scientific_keys": [
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      200,
+      0,
+      "float64"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      400,
+      0,
+      "float64"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      200,
+      0,
+      "float64"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      400,
+      0,
+      "float64"
+    ]
+  ],
+  "requested_scientific_keys": [
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      0,
+      400,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      1,
+      400,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      200,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      200,
+      1,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      400,
+      0,
+      "float32"
+    ],
+    [
+      "cp_rank512_stability",
+      512,
+      2,
+      400,
+      1,
+      "float32"
+    ]
+  ],
+  "checkpoint_sha256": "1576b92ebb359a519d57d489f8ee823c033588fbd7c77b1c9091606f42fb74a3",
+  "target_tensor_sha256": "fb442eda032751bbfd8209ab34c88301f4fe2d320b2c43ef56e911094c2f94ef",
+  "target_layer": "classifier.0",
+  "canonical_target_identity_validation": "Checkpoint hash, target layer, tensor shape, and the recorded target-tensor hash are fixed. The older canonical sensitivity metadata did not store a target-tensor byte hash.",
+  "initialization_identity_by_seed_and_precision": [
+    {
+      "seed": 0,
+      "optimization_precision": "float32",
+      "hashes": [
+        "95f77b63240a59c6001e73cc417ea951902f93f2a0c902ae604499a9b75fc6e4"
+      ],
+      "identical": true
+    },
+    {
+      "seed": 1,
+      "optimization_precision": "float32",
+      "hashes": [
+        "c3995476863bb5682cc17d1ca07a0c8b9eb64b4f4fa7847dfa1c8b1614c4de9f"
+      ],
+      "identical": true
+    },
+    {
+      "seed": 2,
+      "optimization_precision": "float32",
+      "hashes": [
+        "223ca3a43c15e445b5689744497db28b44244262c14dd1c93e0a427238840148"
+      ],
+      "identical": true
+    }
+  ],
+  "shared_initialization_identity_by_seed": [
+    {
+      "seed": 0,
+      "hashes": [
+        "95f77b63240a59c6001e73cc417ea951902f93f2a0c902ae604499a9b75fc6e4"
+      ],
+      "identical_across_precision_budget_and_repetition": true
+    },
+    {
+      "seed": 1,
+      "hashes": [
+        "c3995476863bb5682cc17d1ca07a0c8b9eb64b4f4fa7847dfa1c8b1614c4de9f"
+      ],
+      "identical_across_precision_budget_and_repetition": true
+    },
+    {
+      "seed": 2,
+      "hashes": [
+        "223ca3a43c15e445b5689744497db28b44244262c14dd1c93e0a427238840148"
+      ],
+      "identical_across_precision_budget_and_repetition": true
+    }
+  ],
+  "residual_verification_protocol": "Float64 accumulation compares tltorch weight.to_tensor() against an independent, output-channel-chunked manual CP contraction.",
+  "float64_protocol_note": "Float32 optimization rows are always evaluated in float64. The separately labeled float64 rows attempt full float64 optimization; failures are retained rather than replaced by CPU or MPS.",
+  "software_versions": {
+    "torch": "2.12.0",
+    "torchvision": "0.27.0",
+    "tensorly": "0.9.0",
+    "tensorly-torch": "0.5.0",
+    "numpy": "2.4.4",
+    "pandas": "3.0.3"
+  },
+  "aggregates": [
+    {
+      "method": "cp_rank512_stability",
+      "rank": 512,
+      "optimization_precision": "float32",
+      "iteration_budget": 200,
+      "completed_seed_count": 3,
+      "completed_repetition_row_count": 6,
+      "actual_relative_squared_frobenius_error_mean": 0.7808463587330996,
+      "actual_relative_squared_frobenius_error_std_population": 8.904929151380108e-05,
+      "actual_relative_squared_frobenius_error_min": 0.7807256778165682,
+      "actual_relative_squared_frobenius_error_max": 0.780937872124617,
+      "actual_relative_squared_frobenius_error_seed_range": 0.00021219430804875206,
+      "maximum_within_seed_repetition_range": 0.0,
+      "repeated_seed_count": 3,
+      "all_repeated_results_reproducible_within_tolerance": true,
+      "all_repeated_final_factor_hashes_identical": true,
+      "residual_verification_all_passed": true,
+      "nonfinite_row_count": 0,
+      "factor_degeneracy_row_count": 6,
+      "component_scaling_spread_max": 195.8449398118041,
+      "cancellation_ratio_max": 1422.5485149545639,
+      "maximum_absolute_factor_value": 9.243309020996094
+    },
+    {
+      "method": "cp_rank512_stability",
+      "rank": 512,
+      "optimization_precision": "float32",
+      "iteration_budget": 400,
+      "completed_seed_count": 3,
+      "completed_repetition_row_count": 6,
+      "actual_relative_squared_frobenius_error_mean": 0.7998201885179671,
+      "actual_relative_squared_frobenius_error_std_population": 0.009738946022614233,
+      "actual_relative_squared_frobenius_error_min": 0.7929117794652824,
+      "actual_relative_squared_frobenius_error_max": 0.8135931147537888,
+      "actual_relative_squared_frobenius_error_seed_range": 0.020681335288506464,
+      "maximum_within_seed_repetition_range": 0.0,
+      "repeated_seed_count": 3,
+      "all_repeated_results_reproducible_within_tolerance": true,
+      "all_repeated_final_factor_hashes_identical": true,
+      "residual_verification_all_passed": true,
+      "nonfinite_row_count": 0,
+      "factor_degeneracy_row_count": 2,
+      "component_scaling_spread_max": 119784.7018870212,
+      "cancellation_ratio_max": 1233.0137567166184,
+      "maximum_absolute_factor_value": 10.038614273071289,
+      "previous_iteration_budget": 200,
+      "mean_squared_residual_reduction_from_previous_budget": -0.018973829784867502,
+      "mean_squared_residual_deteriorated_from_previous_budget": true
+    }
+  ],
+  "failures": [],
+  "row_normalization_diagnostics": [],
+  "figure_outputs": [
+    "/content/smallnet/results/paper/figures/rank512_stability.csv",
+    "/content/smallnet/results/paper/figures/rank512_stability.pdf",
+    "/content/smallnet/results/paper/figures/rank512_stability.png"
+  ],
+  "figure_generation_failures": [],
+  "audit_outputs": [
+    "/content/smallnet/results/paper/rank512_stability_audit.md"
+  ],
+  "audit_complete": false,
+  "audit_generation_failures": [],
+  "summary_path": "/content/smallnet/results/camvid_vgg_cp/rank512_stability/rank512_stability_summary.csv",
+  "aggregates_path": "/content/smallnet/results/camvid_vgg_cp/rank512_stability/rank512_stability_aggregates.csv",
+  "peak_process_resident_memory_raw_ru_maxrss": 3683488
+}
