@@ -1,0 +1,50 @@
+{
+  "aggregation_standard_deviation": "population (ddof=0)",
+  "development_only_matrix_svd_path": "results/development/matrix_svd_attempts/final_structural_failed_matrix_svd_rows.csv",
+  "development_only_matrix_svd_rows": 5,
+  "factor_artifact_storage": {
+    "committed": true,
+    "directory": "results/camvid_vgg_cp/final_structural/factors",
+    "note": "Legacy row paths contain /content; artifacts are resolved by basename in the canonical relative directory."
+  },
+  "factor_degeneracy_rows": [
+    {
+      "rank": 512,
+      "seed": 0
+    },
+    {
+      "rank": 512,
+      "seed": 1
+    },
+    {
+      "rank": 512,
+      "seed": 2
+    }
+  ],
+  "final_cp_summary_sha256": "f4e59ae0a56db75543fdfe8fb0d9f3eca615dd38f257dda1992bd9a5becea020",
+  "historical_finetuned_checkpoints_in_final_scope": false,
+  "identities": {
+    "checkpoint_sha256": "1576b92ebb359a519d57d489f8ee823c033588fbd7c77b1c9091606f42fb74a3",
+    "dataset_validation_report_sha256": "f1bb932fa776a2065507de6b29bdc174c139a1e20f8c4172e04df74af037f57b",
+    "target_tensor_sha256": "fb442eda032751bbfd8209ab34c88301f4fe2d320b2c43ef56e911094c2f94ef"
+  },
+  "iteration_budget": 200,
+  "matrix_svd_in_final_scope": false,
+  "method": "cp_200_iterations",
+  "ranks": [
+    32,
+    64,
+    128,
+    256,
+    512
+  ],
+  "row_count": 15,
+  "scope": "final_cp_200_paper_artifacts",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "source_raw_summary": "results/camvid_vgg_cp/final_structural/final_structural_summary.csv",
+  "source_raw_summary_sha256": "de584f2673b4ca2a963dbe826a2b24ae4762db179e2def7a6c0d73ef8619a7ba"
+}

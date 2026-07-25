@@ -1,0 +1,36 @@
+{
+  "all_required_numeric_values_finite": true,
+  "canonical_cp_row_count": 15,
+  "expected_ranks": [
+    32,
+    64,
+    128,
+    256,
+    512
+  ],
+  "expected_seeds": [
+    0,
+    1,
+    2
+  ],
+  "factor_artifact_count": 15,
+  "factor_artifact_file_hashes_match_rows": true,
+  "final_cp_summary_sha256": "f4e59ae0a56db75543fdfe8fb0d9f3eca615dd38f257dda1992bd9a5becea020",
+  "identity_hashes_constant": true,
+  "iteration_budget": 200,
+  "metric_stage_factor_hashes_match": true,
+  "nested_result_tree_absent": true,
+  "raw_canonical_cp_csv_hashes_after_cleanup": {
+    "results/camvid_vgg_cp/final_structural/final_structural_cp_only_summary.csv": "12e6db10c8840e18029e885cc458e7dfcc291bf67c847bc439de5fe41c0d912a",
+    "results/camvid_vgg_cp/final_structural/final_structural_summary.csv": "de584f2673b4ca2a963dbe826a2b24ae4762db179e2def7a6c0d73ef8619a7ba"
+  },
+  "raw_canonical_cp_csv_hashes_before_cleanup": {
+    "results/camvid_vgg_cp/final_structural/final_structural_cp_only_summary.csv": "12e6db10c8840e18029e885cc458e7dfcc291bf67c847bc439de5fe41c0d912a",
+    "results/camvid_vgg_cp/final_structural/final_structural_summary.csv": "de584f2673b4ca2a963dbe826a2b24ae4762db179e2def7a6c0d73ef8619a7ba"
+  },
+  "raw_scientific_values_unchanged": true,
+  "residual_checks_passed": true,
+  "same_fitted_factors_reused": true,
+  "status": "passed",
+  "unique_scientific_key_count": 15
+}

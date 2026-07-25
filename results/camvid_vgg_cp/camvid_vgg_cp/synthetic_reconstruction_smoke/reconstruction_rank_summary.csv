@@ -1,4 +1,0 @@
-actual_relative_squared_frobenius_error_max,actual_relative_squared_frobenius_error_mean,actual_relative_squared_frobenius_error_min,actual_relative_squared_frobenius_error_std_population,completed_seed_count,method,rank
-0.9410695224224263,0.9293524313728078,0.9219658561922797,0.008378645142167202,3,cp,1
-0.8709895690447453,0.8553949883724868,0.84731798244732,0.011029398610635632,3,cp,2
-0.7173438204943864,0.7078182948704721,0.7024159401465343,0.006755778100892935,3,cp,4

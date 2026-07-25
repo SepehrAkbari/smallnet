@@ -229,6 +229,16 @@ The residual is recomputed with float64 accumulation from both the fitted tensor
 
 The accepted downstream CP fitting protocol uses one common budget of 200 iterations for ranks 32, 64, 128, 256, and 512, with seeds 0, 1, and 2. The `final-structural` stage is isolated under `results/camvid_vgg_cp/final_structural/`; it never overwrites the preliminary ten-iteration reconstruction, sensitivity, or structural zero-shot artifacts.
 
+The final paper scope uses only the 15 completed CP rows. Matrix-SVD work is
+retained as development provenance but is excluded from paper-facing
+completeness checks, tables, figures, and claims. Generate and validate the
+CP-only namespace with:
+
+```bash
+uv run python scripts/build_final_cp_paper_artifacts.py
+uv run python scripts/validate_final_cp_paper_artifacts.py
+```
+
 Each CP scientific key is fitted at most once. The fitted layer is saved immediately under `final_structural/factors/`, then the exact same factors are used for weight reconstruction, validation-set target-layer activation distortion, and validation/test zero-shot segmentation. On resume, a valid saved factor artifact is loaded instead of refitting. Its checkpoint hash, dataset-validation hash, target-tensor hash, protocol fields, file SHA-256, and factor-value hash must all match.
 
 Activation distortion is isolated to `classifier.0`. A forward hook captures the input received by the dense target layer, and that identical input is passed to the compressed layer. Global normalized error is accumulated from total squared norms, not from batch-level ratios. Per-example normalized squared errors are separately summarized by their mean, population standard deviation, minimum, and maximum.

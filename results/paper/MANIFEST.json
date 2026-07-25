@@ -1,35 +1,185 @@
 {
-  "schema": "smallnet.paper_manifest.v1",
-  "environment": {
-    "created_utc": "2026-07-06T17:09:50.413247+00:00",
-    "python": "3.12.13",
-    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
-    "torch": "2.12.0+cu130",
-    "cuda_available": true,
-    "cuda_version": "13.0",
-    "cudnn_version": 92000,
-    "mps_available": false,
-    "git_commit": "d19617f5cf9e9e08aba92728179587f48328fbd1",
-    "git_dirty": true
-  },
-  "input_directory": "/content/smallnet/results/camvid_vgg_cp",
-  "missing_inputs": [
-    "/content/smallnet/results/camvid_vgg_cp/cp_finetune_summary.csv"
+  "artifacts": [
+    {
+      "path": "results/camvid_vgg_cp/final_cp_200/final_cp_summary.csv",
+      "sha256": "f4e59ae0a56db75543fdfe8fb0d9f3eca615dd38f257dda1992bd9a5becea020",
+      "size_bytes": 220477
+    },
+    {
+      "path": "results/camvid_vgg_cp/final_cp_200/final_cp_rank_summary.csv",
+      "sha256": "debefa0306034af1d5e0bb6b851116e77a0c9c37acc0db47925da9da247a9615",
+      "size_bytes": 3676
+    },
+    {
+      "path": "results/camvid_vgg_cp/final_cp_200/final_cp_metadata.json",
+      "sha256": "1bd7186fbdf36fe0ff07bc4b5841f8f51d2ddc844e07f451e9089ae67c3784fa",
+      "size_bytes": 1581
+    },
+    {
+      "path": "results/camvid_vgg_cp/final_cp_200/final_cp_validation.json",
+      "sha256": "66eb3499fc0c1bd3588dbfc36dbb0edc61a5ddbe69c91779b45797ecc7063754",
+      "size_bytes": 1388
+    },
+    {
+      "path": "results/paper/tables/final_cp_structural_results.csv",
+      "sha256": "99a10923fa0f16a6e5067ad11c8eefc1f2d64abd7dcfe7d428b99de3e1250e91",
+      "size_bytes": 1434
+    },
+    {
+      "path": "results/paper/tables/final_cp_structural_results.tex",
+      "sha256": "380b2aa739902a96b6e968a3061e0a91df1b743c8522d3120f86ecb3aa4e5219",
+      "size_bytes": 859
+    },
+    {
+      "path": "results/paper/tables/final_cp_costs.csv",
+      "sha256": "b3a02a89e24a8c2d4fb4734e04b00466cb54783d1a4fdfbde1317f7c7dd7278c",
+      "size_bytes": 920
+    },
+    {
+      "path": "results/paper/tables/final_cp_costs.tex",
+      "sha256": "20d5e9d8391539a300978db7d8e1ffa3f0d06586fc314c0904a108e83db4d25d",
+      "size_bytes": 823
+    },
+    {
+      "path": "results/paper/tables/dense_reference.csv",
+      "sha256": "82584fc5d1aeffb12c159da6aa360c6110b7366ba5f663c4f4740bb207fc0a0a",
+      "size_bytes": 491
+    },
+    {
+      "path": "results/paper/tables/dense_reference.tex",
+      "sha256": "5ab74acedeb7cba3b85dfd5c83b440a54ee7e36e78553b2ece903e0a454d32fa",
+      "size_bytes": 337
+    },
+    {
+      "path": "results/paper/tables/final_cp_correlations.csv",
+      "sha256": "4b920e56a3717718ce96fea701350331763c42ecf91f44c1a3dfed4a35367d05",
+      "size_bytes": 1708
+    },
+    {
+      "path": "results/paper/figures/final_cp_weight_error_vs_rank.csv",
+      "sha256": "5d98e591cb3e7937b0e069b396c1aac2adc3fe9b179658b6709485d7081f2c62",
+      "size_bytes": 330
+    },
+    {
+      "path": "results/paper/figures/final_cp_weight_error_vs_rank.pdf",
+      "sha256": "49ecddf549e887342892f57b1e0396eacd0fc238ac96e3ff90abc7d4e1fef87e",
+      "size_bytes": 15208
+    },
+    {
+      "path": "results/paper/figures/final_cp_weight_error_vs_rank.png",
+      "sha256": "6c1cb60048ef5615ec73558a0efa66a05f801d5502bff8540743d258688c8bc5",
+      "size_bytes": 93687
+    },
+    {
+      "path": "results/paper/figures/final_cp_activation_error_vs_rank.csv",
+      "sha256": "3325e6ce8d8e0d9859b65d2c4fb6ecc850961000967ff4bd998127f9e7e99799",
+      "size_bytes": 345
+    },
+    {
+      "path": "results/paper/figures/final_cp_activation_error_vs_rank.pdf",
+      "sha256": "7a993544071f78dd6b0b2d819a83a26f32b63d372e1954135398bf3362ca5536",
+      "size_bytes": 14169
+    },
+    {
+      "path": "results/paper/figures/final_cp_activation_error_vs_rank.png",
+      "sha256": "706be74744e0ae419fbf9116d1e1ddb59612142d7f810e68ab93b3ab634fe821",
+      "size_bytes": 93299
+    },
+    {
+      "path": "results/paper/figures/final_cp_zero_shot_miou_vs_rank.csv",
+      "sha256": "c9883daaa32398f78a0d6130e772f5bf98d8bebb1c8c4f26ce0b70bf4ead8072",
+      "size_bytes": 605
+    },
+    {
+      "path": "results/paper/figures/final_cp_zero_shot_miou_vs_rank.pdf",
+      "sha256": "d77edb1fbbcd6ae70c33f102f3acc7c39a05d24a09293c85436858bda0444248",
+      "size_bytes": 15358
+    },
+    {
+      "path": "results/paper/figures/final_cp_zero_shot_miou_vs_rank.png",
+      "sha256": "eceecf64b2b056fd08fa14622575d9010a21e5c86982c53c5093c166f218bb90",
+      "size_bytes": 86046
+    },
+    {
+      "path": "results/paper/figures/final_cp_compression_accuracy_tradeoff.csv",
+      "sha256": "cff854105aa64f2ab4d17bed5ce90743173e4736ae97d05267052ea52f55ac08",
+      "size_bytes": 847
+    },
+    {
+      "path": "results/paper/figures/final_cp_compression_accuracy_tradeoff.pdf",
+      "sha256": "8748549876263fa7edd809fb12e79efedfadd805a0568c58ae0b69199f924a8c",
+      "size_bytes": 16091
+    },
+    {
+      "path": "results/paper/figures/final_cp_compression_accuracy_tradeoff.png",
+      "sha256": "573ab683c271ea614dd8dc273296b4c96c9a23ca4171ad9f45714f80f4c79a81",
+      "size_bytes": 105528
+    },
+    {
+      "path": "results/paper/final_cp_200_audit.md",
+      "sha256": "e323b4cdb65927f0232789c27cb7a63c02f01215f99ff5b4ee82808ca1bba1e6",
+      "size_bytes": 3516
+    },
+    {
+      "path": "results/paper/PUBLICATION_TODOS.md",
+      "sha256": "2f432e9e0fa65f12e534de7f8fbc87ecca07b3a144d9db1d2ab09116cdda1dcf",
+      "size_bytes": 330
+    },
+    {
+      "path": "results/camvid_vgg_cp/dense_eval_summary.csv",
+      "sha256": "87b21f912e81c7fc17679e8fd943628dd5472bb460996dfef945eb100e9ae273",
+      "size_bytes": 676
+    },
+    {
+      "path": "results/camvid_vgg_cp/dataset_validation_report.json",
+      "sha256": "f1bb932fa776a2065507de6b29bdc174c139a1e20f8c4172e04df74af037f57b",
+      "size_bytes": 54848
+    },
+    {
+      "path": "results/paper/cp_iteration_sensitivity_audit.md",
+      "sha256": "9e163f1831cdcc57dab067c97bd1207ab7fec05e58b5fc55d4e3d0d7f6401c45",
+      "size_bytes": 5811
+    },
+    {
+      "path": "results/paper/rank512_repeatability_decision.md",
+      "sha256": "b52c1e07905944ce17458d84b5db0a83ee8e2c70fb2a6114969e693936a0fcce",
+      "size_bytes": 2336
+    },
+    {
+      "path": "results/paper/rank512_stability_audit.md",
+      "sha256": "3dd14956397f56356f72ced63b5b18c6b70a8f332bec576fb2f12142c4cbb4ae",
+      "size_bytes": 1069
+    },
+    {
+      "path": "configs/camvid_vgg_cp_paper.json",
+      "sha256": "2fb113c643040c74f165451ec7cba65510ee3e2db801fa75b5f6a432a0d0b5d9",
+      "size_bytes": 5619
+    },
+    {
+      "path": "results/camvid_vgg_cp/final_structural/final_structural_config_used.json",
+      "sha256": "f2392807344f1de84e4ec6e33b57b23d600a424ace09629a079a9f0b4bc63d27",
+      "size_bytes": 6533
+    }
   ],
-  "outputs": {
-    "main_results_csv": "/content/smallnet/results/paper/tables/main_results.csv",
-    "main_results_tex": "/content/smallnet/results/paper/tables/main_results.tex",
-    "profile_results_csv": "/content/smallnet/results/paper/tables/profile_results.csv",
-    "profile_results_tex": "/content/smallnet/results/paper/tables/profile_results.tex",
-    "miou_vs_target_layer_parameter_ratio_pdf": "/content/smallnet/results/paper/figures/miou_vs_target_layer_parameter_ratio.pdf",
-    "miou_vs_total_parameter_ratio_pdf": "/content/smallnet/results/paper/figures/miou_vs_total_parameter_ratio.pdf",
-    "latency_vs_macs_pdf": "/content/smallnet/results/paper/figures/latency_vs_macs.pdf",
-    "latency_vs_total_parameter_ratio_pdf": "/content/smallnet/results/paper/figures/latency_vs_total_parameter_ratio.pdf",
-    "rank_energy_summary_csv": "/content/smallnet/results/paper/tables/rank_energy_summary.csv",
-    "rank_energy_summary_tex": "/content/smallnet/results/paper/tables/rank_energy_summary.tex",
-    "singular_values_by_mode_csv": "/content/smallnet/results/paper/tables/singular_values_by_mode.csv",
-    "singular_value_decay_by_mode_pdf": "/content/smallnet/results/paper/figures/singular_value_decay_by_mode.pdf",
-    "cumulative_energy_by_mode_pdf": "/content/smallnet/results/paper/figures/cumulative_energy_by_mode.pdf"
+  "checkpoint_sha256": "1576b92ebb359a519d57d489f8ee823c033588fbd7c77b1c9091606f42fb74a3",
+  "dataset_validation_report_sha256": "f1bb932fa776a2065507de6b29bdc174c139a1e20f8c4172e04df74af037f57b",
+  "kind": "final_cp_200_paper_reproducibility_manifest",
+  "scope": {
+    "iteration_budget": 200,
+    "matrix_svd_in_final_scope": false,
+    "method": "cp_200_iterations",
+    "ranks": [
+      32,
+      64,
+      128,
+      256,
+      512
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ]
   },
-  "interpretation_note": "Unfolding rank-energy is a necessary structural diagnostic for CP compression. It does not prove that a CP-rank model will preserve downstream segmentation accuracy."
+  "target_tensor_sha256": "fb442eda032751bbfd8209ab34c88301f4fe2d320b2c43ef56e911094c2f94ef"
 }

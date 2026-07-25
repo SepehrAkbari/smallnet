@@ -1,0 +1,17 @@
+iteration_budget,normalized_squared_frobenius_residual,optimization_precision,plotted_iteration_budget,rank,repetition,seed,series
+200,0.780875526258114,float32,198.8,512,0,0,float32_individual
+400,0.7929556713348305,float32,397.6,512,0,0,float32_individual
+200,0.780875526258114,float32,201.2,512,1,0,float32_individual
+400,0.7929556713348305,float32,402.4,512,1,0,float32_individual
+200,0.7807256778165682,float32,198.8,512,0,1,float32_individual
+400,0.8135931147537888,float32,397.6,512,0,1,float32_individual
+200,0.7807256778165682,float32,201.2,512,1,1,float32_individual
+400,0.8135931147537888,float32,402.4,512,1,1,float32_individual
+200,0.780937872124617,float32,198.8,512,0,2,float32_individual
+400,0.7929117794652824,float32,397.6,512,0,2,float32_individual
+200,0.780937872124617,float32,201.2,512,1,2,float32_individual
+400,0.7929117794652824,float32,402.4,512,1,2,float32_individual
+200,0.7808463587330997,float32,200.0,512,,,float32_mean
+400,0.7998201885179673,float32,400.0,512,,,float32_mean
+,0.5532109160047733,,,512,,,matrix_svd_reference
+,0.5532109160047733,,,512,,,strongest_unfolding_bound

@@ -5,10 +5,13 @@ as a reproducible diagnostic experiment, not as a state-of-the-art computer
 vision benchmark. The paper focus is VGG16-FCN32s on CamVid with CP
 factorization of the dominant `classifier.0` convolution.
 
-The central claim is modest: low-rank tensor factorization can sharply reduce
-the parameter count of a dominant FCN classifier layer, but rank-energy
-diagnostics, downstream mIoU, and hardware latency can disagree. Compression
-claims should therefore be audited structurally and empirically.
+The final paper experiment is CP-only: post-training factorization of
+`classifier.0` at ranks 32, 64, 128, 256, and 512, with seeds 0, 1, and 2 and
+a common 200-iteration fitting budget. It measures weight reconstruction,
+isolated-layer activation distortion, zero-shot validation/test segmentation,
+and parameter/MAC costs. The central claim remains modest: compression of one
+dominant layer must be audited structurally and functionally, and target-layer
+compression is not full-model compression.
 
 When the config uses `FactorizedConv.from_conv` with `init: "random"` and
 `n_iter_max > 0`, the random value is the tensor-decomposition initializer.
@@ -31,9 +34,13 @@ claim that the neural layer is simply randomly initialized.
 - `tests/`: lightweight tests using synthetic tensors and tiny temporary data.
 - `res/`: historical regenerated result summaries and paper assets.
 - `results/`: default output directory for new experiment runs.
+- `results/camvid_vgg_cp/final_cp_200/`: canonical CP-only paper dataset.
 
 Older scripts in `scripts/` are retained for compatibility and historical
 result regeneration. New paper runs should use `scripts/run_experiment.py`.
+Matrix-SVD development was abandoned and is outside the final paper scope.
+Older fine-tuned checkpoints remain historical artifacts and are not part of
+the canonical 200-iteration post-training experiment.
 
 ## Data Layout
 
@@ -92,6 +99,13 @@ Install dependencies with `uv sync`, then run tests:
 
 ```bash
 uv run python -m pytest
+```
+
+Validate the committed final paper artifacts without CamVid, CUDA, or the
+dense checkpoint:
+
+```bash
+uv run python scripts/validate_final_cp_paper_artifacts.py
 ```
 
 Validate CamVid before any paper experiment:
@@ -162,3 +176,10 @@ The `validate-data` stage writes `dataset_validation_report.json`,
 
 Metadata includes timestamp, device name, PyTorch version, CUDA availability
 and version, git commit hash, and dirty-worktree status when available.
+
+The final paper-facing tables and figures are generated from the immutable
+completed rows with:
+
+```bash
+uv run python scripts/build_final_cp_paper_artifacts.py
+```

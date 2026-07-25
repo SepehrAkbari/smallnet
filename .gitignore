@@ -10,13 +10,16 @@ results/**/checkpoints/
 results/**/*.pth
 results/**/*.pt
 results/**/*.ckpt
+!results/camvid_vgg_cp/final_structural/factors/*.pt
+results/camvid_vgg_cp/camvid_vgg_cp/
+results/paper/paper/
 doc/
 .vscode
 .DS_Store
 ._*
 
-paper/
-tmp/
+/paper/
+/tmp/
 
 results/camvid_vgg_cp_temp/
 results/paper_temp/

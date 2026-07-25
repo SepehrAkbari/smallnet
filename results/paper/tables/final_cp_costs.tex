@@ -1,0 +1,16 @@
+\begin{table}
+\centering
+\caption{CP representation costs. Layer and full-model compression factors are distinct.}
+\label{tab:final-cp-costs}
+\begin{tabular}{rrrrrrrrr}
+\toprule
+Rank & Layer params & Layer ratio & Layer $\times$ & Model params & Model ratio & Model $\times$ & Layer MACs & Model MACs \\
+\midrule
+32 & 152,032 & 0.0015 & 675.94 & 31,779,136 & 0.2365 & 4.23 & 24,409,440 & 54,491,706,720 \\
+64 & 299,968 & 0.0029 & 342.59 & 31,927,072 & 0.2376 & 4.21 & 48,818,880 & 54,516,116,160 \\
+128 & 595,840 & 0.0058 & 172.47 & 32,222,944 & 0.2398 & 4.17 & 97,637,760 & 54,564,935,040 \\
+256 & 1,187,584 & 0.0116 & 86.53 & 32,814,688 & 0.2442 & 4.10 & 195,275,520 & 54,662,572,800 \\
+512 & 2,371,072 & 0.0231 & 43.34 & 33,998,176 & 0.2530 & 3.95 & 390,551,040 & 54,857,848,320 \\
+\bottomrule
+\end{tabular}
+\end{table}

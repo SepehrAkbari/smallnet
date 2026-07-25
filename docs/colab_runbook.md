@@ -58,6 +58,23 @@ evidence.
 
 ## Outputs To Download And Commit
 
+Copy the *contents* of the remote results directories, not the directory
+container itself. For example, the trailing slashes below prevent creating
+`results/camvid_vgg_cp/camvid_vgg_cp/` or `results/paper/paper/`:
+
+```bash
+rsync -av /remote/results/camvid_vgg_cp/ results/camvid_vgg_cp/
+rsync -av /remote/results/paper/ results/paper/
+```
+
+After transfer, reject accidental repeated roots before committing:
+
+```bash
+test ! -e results/camvid_vgg_cp/camvid_vgg_cp
+test ! -e results/paper/paper
+uv run python scripts/validate_final_cp_paper_artifacts.py
+```
+
 Download and commit small generated artifacts:
 
 ```text
@@ -96,3 +113,8 @@ a claim that the neural layer is an unfitted random layer.
 Rank-energy diagnostics are necessary structural audits for CP compression.
 They do not prove that a given CP-rank model will preserve downstream mIoU or
 improve hardware latency.
+
+The accepted paper-facing experiment is CP-only: five ranks, three seeds, and
+200 fitting iterations, with weight, isolated-layer activation, zero-shot
+segmentation, parameter, and MAC diagnostics. Matrix-SVD attempts are retained
+only as development provenance and are not paper evidence.
